@@ -11,6 +11,7 @@ node_modules/
 # To set up: rename config/_accounts/ to config/accounts/ — see config/README.md
 # WARNING: Do NOT use `git add -f config/accounts/` — it will expose your credentials.
 config/accounts/
+config/_accounts/
 
 # Test artifacts
 tests/logs/*.log
