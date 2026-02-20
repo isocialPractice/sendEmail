@@ -13,6 +13,8 @@ node_modules/
 # WARNING: Do NOT use `git add -f config/accounts/` — it will expose your credentials.
 config/accounts/
 config/_accounts/
+config/_accounts/_default.js
+config/_accounts/example.js
 
 # Test artifacts
 tests/logs/*.log
