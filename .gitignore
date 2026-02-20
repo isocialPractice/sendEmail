@@ -8,6 +8,7 @@ node_modules/
 
 # Sensitive credentials - NEVER commit
 # config/accounts/ contains real email credentials and must NEVER be pushed.
+# config/_accounts/ exists in repo as template but local changes are not tracked.
 # To set up: rename config/_accounts/ to config/accounts/ — see config/README.md
 # WARNING: Do NOT use `git add -f config/accounts/` — it will expose your credentials.
 config/accounts/
