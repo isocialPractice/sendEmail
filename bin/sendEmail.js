@@ -9,7 +9,7 @@
  */
 
 import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 
@@ -23,7 +23,7 @@ const srcEntry = resolve(rootPath, 'src', 'cli', 'index.ts');
 
 if (existsSync(distEntry)) {
   // Production: use compiled JS
-  const { run } = await import(distEntry);
+  const { run } = await import(pathToFileURL(distEntry).href);
   await run().catch(err => {
     console.error('[sendEmail] Fatal error:', err.message);
     process.exit(1);

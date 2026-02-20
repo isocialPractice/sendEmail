@@ -113,7 +113,7 @@ export class EmailEngine {
       fromAddress = merged.from;
     } else {
       // from is an account name - get user from transporter config
-      fromAddress = this.getTransporterUser();
+      fromAddress = this.getAccountEmail();
     }
 
     // Resolve 'to'
@@ -285,7 +285,7 @@ export class EmailEngine {
 
   // ─── Private Helpers ──────────────────────────────────────────────────────
 
-  private getTransporterUser(): string {
+  getAccountEmail(): string {
     // Try to get from transporter options
     try {
       const opts = (this.transporter as unknown as { options?: { auth?: { user?: string } } }).options;

@@ -96,10 +96,8 @@ export async function run(argv?: string[]): Promise<void> {
       text: messageText || '(empty message)',
     };
 
-    // Fill from address if empty (will be set by engine)
     if (!message.from) {
-      // Will use account's from address - set a placeholder
-      message.from = 'noreply@example.com';
+      message.from = engine.getAccountEmail();
     }
 
     const confirmed = await confirmSend(message as Parameters<typeof confirmSend>[0], opts.force);
