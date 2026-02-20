@@ -7,8 +7,10 @@ dist/
 node_modules/
 
 # Sensitive credentials - NEVER commit
-config/accounts/_default.js
-config/accounts/*.local.js
+# config/accounts/ contains real email credentials and must NEVER be pushed.
+# To set up: rename config/_accounts/ to config/accounts/ — see config/README.md
+# WARNING: Do NOT use `git add -f config/accounts/` — it will expose your credentials.
+config/accounts/
 
 # Test artifacts
 tests/logs/*.log
@@ -26,6 +28,6 @@ zipFilesCall.bat
 # OS files
 .DS_Store
 Thumbs.db
-config/accounts/
-.claude/ 
-config/accounts/_default.js 
+
+# Claude Code workspace
+.claude/

@@ -28,14 +28,24 @@ sendEmail -h
 
 ### 1. Configure Your Email Account
 
-Copy the example account and fill in your credentials:
+The repo ships with `config/_accounts/` as a versioned template. Rename it to activate it:
 
 ```bash
-cp config/accounts/example.js config/accounts/_default.js
-# Edit _default.js with your email credentials
+# Unix/macOS/Cygwin
+mv config/_accounts config/accounts
+
+# Windows CMD
+rename config\_accounts config\accounts
 ```
 
+Then edit `config/accounts/_default.js` with your credentials.
+
 For **Gmail**, use an [App Password](https://support.google.com/accounts/answer/185833) (requires 2FA).
+
+> [!CAUTION]
+> `config/accounts/` is excluded from git — it contains real credentials.
+> **Never run `git add -f config/accounts/`** — this bypasses `.gitignore` and will expose your credentials.
+> See [config/README.md](config/README.md) for full details.
 
 ### 2. Build
 
@@ -128,7 +138,8 @@ sendEmail/
 │   ├── sendEmail.cmd          # Windows CMD wrapper
 │   └── sendEmail.ps1          # PowerShell wrapper
 ├── config/
-│   ├── accounts/              # Email account credentials
+│   ├── _accounts/             # Template (versioned) — rename to accounts/ to activate
+│   ├── accounts/              # !! git-ignored !! — your real credentials live here
 │   │   ├── _default.js        # REQUIRED default account
 │   │   └── example.js
 │   ├── emails/                # Configured email templates

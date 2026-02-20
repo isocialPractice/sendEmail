@@ -40,7 +40,7 @@ export async function run(argv?: string[]): Promise<void> {
 
   // ── Help ──────────────────────────────────────────────────────────────────
   if (opts.help !== undefined) {
-    printHelp(opts.help || undefined);
+    printHelp(typeof opts.help === 'string' ? opts.help : undefined);
     return;
   }
 
@@ -65,7 +65,7 @@ export async function run(argv?: string[]): Promise<void> {
   // ── Tool: Test ────────────────────────────────────────────────────────────
   if (opts.test !== undefined) {
     const runner = new TestRunner(findRootPath());
-    await runner.run(opts.test || undefined);
+    await runner.run(typeof opts.test === 'string' ? opts.test : undefined);
     return;
   }
 
@@ -267,7 +267,10 @@ async function getConfigAttachments(
   }
 }
 
-// Run when called directly
-run().catch(err => {
-  handleError(err, true);
-});
+// Run when called directly (not when imported by bin/sendEmail.js)
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  run().catch(err => {
+    handleError(err, true);
+  });
+}
