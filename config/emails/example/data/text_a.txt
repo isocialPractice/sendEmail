@@ -1,0 +1,3 @@
+Hello CH-EMAILONLIST,
+
+This could be the complete data to send in the email message, or data that is inserted into a section of an email message. For inserting the data text_b.json works as a better example.

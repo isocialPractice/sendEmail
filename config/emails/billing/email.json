@@ -1,0 +1,12 @@
+ // email
+ // JSON configuration for a email.
+ 
+ {
+  "to": "CHANGE_SEND_TO",
+  "bcc": "CHANGE_BCC",
+()=>  "from": accountName,
+()=>  "replyTo": accountName,
+()=>  "subject": "Billing Statement - " + emailList.name[i],
+  "html": "billingStatement.htm",
+()=> "attachments": emailAttachments | globalAttachments | emailAttachments + globalAttachments[i] -> i = regEx [0-9]+
+}

@@ -1,0 +1,2 @@
+Can also be raw text that is included in the `../html/<fileName>.htm`.
+()=> see `../html/html_b.htm` example.

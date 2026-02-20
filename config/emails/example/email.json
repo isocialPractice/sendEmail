@@ -1,0 +1,18 @@
+ // email
+ // JSON configuration for a email.
+ 
+ {
+()=>  "to": "CHANGE_SEND_TO",
+()=>  "bcc": "CHANGE_BCC",
+()=>  "from": accountName,
+()=>  "replyTo": accountName,
+()=>  "subject": "CHANGE_MESSAGE_HEADER",
+()=>  "html": ["html_a", "html_b"],
+()=> "attachments": (emailAttachments | globalAttachments | emailAttachments + globalAttachments[i] -> i = regEx [0-9]+),
+ "dsn": {
+()=>  "id": "DSN_ID",
+  "return": "headers",
+  "notify": ["success", "delay"],
+()=>  "recipient": accountName
+ }
+}
