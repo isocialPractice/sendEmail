@@ -28,14 +28,18 @@ sendEmail -h
 
 ### 1. Configure Your Email Account
 
-The repo ships with `config/_accounts/` as a versioned template. Rename it to activate it:
+Run the setup script to create `config/accounts/_default.js` from the template:
+
+#### Unix/macOS/Git Bash
 
 ```bash
-# Unix/macOS/Cygwin
-mv config/_accounts config/accounts
+bash .github/scripts/setup.sh
+```
 
-# Windows CMD
-rename config\_accounts config\accounts
+#### Windows CMD
+
+```bash
+.github\scripts\setup.bat
 ```
 
 Then edit `config/accounts/_default.js` with your credentials.

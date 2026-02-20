@@ -2,15 +2,21 @@
 
 ## Setup
 
-The repo ships with `config/_accounts/` as a safe template directory (the underscore prefix keeps it in version control). You must rename it to `config/accounts/` to activate it:
+Run the setup script to create `config/accounts/_default.js`:
+
+#### Unix/macOS/Git Bash
 
 ```bash
-# Unix/macOS/Cygwin
-mv config/_accounts config/accounts
-
-# Windows CMD
-rename config\_accounts config\accounts
+bash .github/scripts/setup.sh
 ```
+
+#### Windows CMD
+
+```bash
+.github\scripts\setup.bat
+```
+
+The script automatically creates the accounts folder and copies the template (or restores from git history if cloned fresh).
 
 Then edit `config/accounts/_default.js` with your real credentials.
 
