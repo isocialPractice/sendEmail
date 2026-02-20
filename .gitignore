@@ -26,3 +26,6 @@ zipFilesCall.bat
 # OS files
 .DS_Store
 Thumbs.db
+config/accounts/
+.claude/ 
+config/accounts/_default.js 

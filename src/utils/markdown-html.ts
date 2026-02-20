@@ -11,25 +11,26 @@ import { marked, Renderer } from 'marked';
  * - Inline styles instead of class-based CSS
  * - No external stylesheet references
  * - No JavaScript
+ *
+ * Uses the marked v12 renderer API (individual string parameters).
  */
 export async function markdownToHtml(markdown: string): Promise<string> {
   const renderer = new Renderer();
 
   // Override link renderer - make links open in new tab (email-safe)
-  renderer.link = ({ href, title, tokens }) => {
-    const text = tokens.map(t => ('text' in t ? t.text : '')).join('');
+  renderer.link = (href: string, title: string | null | undefined, text: string): string => {
     const titleAttr = title ? ` title="${title}"` : '';
     return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
   };
 
   // Override image renderer - email clients handle src differently
-  renderer.image = ({ href, title, text }) => {
+  renderer.image = (href: string, title: string | null | undefined, text: string): string => {
     const titleAttr = title ? ` title="${title}"` : '';
     return `<img src="${href}" alt="${text}"${titleAttr} style="max-width:100%;" />`;
   };
 
   // Override heading to add basic inline styles
-  renderer.heading = ({ text, depth }) => {
+  renderer.heading = (text: string, depth: number): string => {
     const sizes: Record<number, string> = {
       1: '24px',
       2: '20px',

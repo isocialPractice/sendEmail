@@ -1,12 +1,26 @@
 /**
  * prompts.ts
- * User confirmation and input prompts using inquirer.
+ * User confirmation and input prompts using Node.js readline/promises.
  * These are shown before sending to allow the user to review and confirm.
  */
 
-import inquirer from 'inquirer';
+import { createInterface } from 'readline/promises';
 import chalk from 'chalk';
 import type { EmailMessage } from '../core/types.js';
+
+/**
+ * Ask a Y/N question on the terminal. Returns true for 'y', false otherwise.
+ * Default is No (user must explicitly type 'y' to confirm).
+ */
+async function askYesNo(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(`${question} (y/N): `);
+    return answer.trim().toLowerCase() === 'y';
+  } finally {
+    rl.close();
+  }
+}
 
 /**
  * Show a preview of the email message and prompt for confirmation.
@@ -42,16 +56,7 @@ export async function confirmSend(message: EmailMessage, force = false): Promise
   console.log(chalk.gray('─'.repeat(50)));
   console.log();
 
-  const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
-    {
-      type: 'confirm',
-      name: 'confirmed',
-      message: 'Send this email?',
-      default: false,
-    },
-  ]);
-
-  return confirmed;
+  return askYesNo('Send this email?');
 }
 
 /**
@@ -75,16 +80,7 @@ export async function confirmBulkSend(
   console.log(chalk.yellow(`⚠  This will send ${count} emails.`));
   console.log();
 
-  const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
-    {
-      type: 'confirm',
-      name: 'confirmed',
-      message: `Send to all ${count} recipients?`,
-      default: false,
-    },
-  ]);
-
-  return confirmed;
+  return askYesNo(`Send to all ${count} recipients?`);
 }
 
 /**

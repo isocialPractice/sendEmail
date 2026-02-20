@@ -29,7 +29,7 @@ export interface AccountConfig {
 
 /**
  * Email attachment configuration
- * Used in config/emails/*/email.js and config/globals/*/global.js
+ * Used in config/emails/email.js and config/globals/global.js
  */
 export interface Attachment {
   filename: string;
@@ -39,7 +39,7 @@ export interface Attachment {
 }
 
 /**
- * Email configuration loaded from config/emails/*/email.json
+ * Email configuration loaded from config/emails/email.json
  */
 export interface EmailConfig {
   to?: string | string[];
@@ -50,7 +50,7 @@ export interface EmailConfig {
   subject?: string;
   html?: string | string[];  // HTML file reference(s) relative to email's html/ folder
   text?: string;             // Text file reference
-  attachments?: string;      // Key name of attachments export from email.js
+  attachments?: string | Attachment[];  // String key name from email.js, OR pre-loaded array
   globals?: string[];        // Global template names to include (e.g., ["footer"])
   dsn?: DsnConfig;
 }
