@@ -10,7 +10,7 @@
 
 import nodemailer from 'nodemailer';
 
-// 컴 FORMAT A: Account Config Object (Recommended) 컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+// -- FORMAT A: Account Config Object (Recommended) ----------------------------
 // Use this format for clean configuration:
 
 // export const account = {
@@ -21,7 +21,7 @@ import nodemailer from 'nodemailer';
 //   },
 // };
 
-// 컴 FORMAT B: Legacy Nodemailer Transporter 컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+// -- FORMAT B: Legacy Nodemailer Transporter -----------------------------------
 // The engine supports this format for backwards compatibility:
 
 export const transporter = nodemailer.createTransport({
