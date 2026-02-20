@@ -4,7 +4,7 @@ description: 'Using the contents of the current workspace or codebase, restructu
 tools: ['codebase', 'edit/editFiles', 'edit/createDirectory', 'edit/createFile', 'fetch', 'github', 'read', 'read/readFile', 'search', 'search/codebase', 'search/fileSearch', 'web', 'web/fetch', 'web/githubRepo']
 ---
 
-# PROMPT DATA FOR `make-send-email-tool.prompt.md`
+# Make Send Email Tool
 
 ## Current Codebase Analysis
 
@@ -574,6 +574,9 @@ Template variables in email content, subjects, and filenames should be replaced:
 - `CHANGE_MESSAGE_HEADER` → Email subject
 - `CH-EMAILTEXT` → Email message content path
 - `CH-FILENAME_1`, `CH-IMG_1`, etc. → Attachment filenames/paths
+
+> [!NOTE]
+> Use best judgement for how to handle template data filles, but ensure they are consistent
 
 **Proposed Variable System**:
 ```

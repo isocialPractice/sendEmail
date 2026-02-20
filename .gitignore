@@ -1,4 +1,28 @@
-zipFilesCall.bat 
-zipFilesCall.bat 
-tmpclaude* 
-.backups/ 
+# Build output
+dist/
+*.js.map
+*.d.ts
+
+# Dependencies
+node_modules/
+
+# Sensitive credentials - NEVER commit
+config/accounts/_default.js
+config/accounts/*.local.js
+
+# Test artifacts
+tests/logs/*.log
+coverage/
+
+# Temporary files
+tmpclaude*
+.tmp/
+*.tmp
+
+# Backups
+.backups/
+zipFilesCall.bat
+
+# OS files
+.DS_Store
+Thumbs.db

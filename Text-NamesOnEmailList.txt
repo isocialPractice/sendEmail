@@ -1,8 +1,0 @@
-John Apple
-Jane Apple
-John Bob
-Jane Bob
-John Cap
-Jane Cap
-John Doe
-Jane Doe

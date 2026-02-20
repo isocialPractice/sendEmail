@@ -1,17 +1,18 @@
-// global
-// Global configuration for commonly used email attachments and assets embedded in an email.
+// global.js
+// Global attachment configuration for the footer template.
+// These attachments (logo, map) are shared across multiple email templates.
 
-export var globalAttachments = [
- {
-  filename: 'Logo',
-  path: 'img/logo.jpg',
-  contentDisposition: "inline",
-  cid: userName
- },
- {
-  filename: 'Map',
-  path: 'img/map.jpg',
-  contentDisposition: "inline",
-  cid: userName
- }
+export const globalAttachments = [
+  {
+    filename: 'Logo',
+    path: 'img/logo.jpg',
+    contentDisposition: 'inline',
+    cid: 'logo@footer.local',
+  },
+  {
+    filename: 'Map',
+    path: 'img/map.jpg',
+    contentDisposition: 'inline',
+    cid: 'map@footer.local',
+  },
 ];
