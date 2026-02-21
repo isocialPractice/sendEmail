@@ -69,6 +69,18 @@ export async function copyFile(src: string, dest: string): Promise<void> {
 }
 
 /**
+ * Returns true if name matches the exclude pattern.
+ * Supports glob-style * wildcard (e.g. "tmpclaude.*", "__sendEmail__.*").
+ */
+function matchesExclude(name: string, pattern: string): boolean {
+  if (!pattern.includes('*')) return name === pattern;
+  const regex = new RegExp(
+    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return regex.test(name);
+}
+
+/**
  * Copy a directory recursively, with optional exclusion list.
  */
 export async function copyDir(
@@ -80,7 +92,7 @@ export async function copyDir(
   const entries = await fs.readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (exclude.includes(entry.name)) continue;
+    if (exclude.some(p => matchesExclude(entry.name, p))) continue;
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
 

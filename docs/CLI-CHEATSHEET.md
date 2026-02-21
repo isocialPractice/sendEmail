@@ -25,6 +25,9 @@ sendEmail --account myaccount --send-to someone@example.com --subject "Test"
 # Bulk send to list (no prompt)
 sendEmail --config-email newsletter --email-list subscribers --force
 
+# Send one email to all contacts on a list
+sendEmail --config-email billing --email-list clients --send-all --force
+
 # Send with attachment
 sendEmail --send-to john@example.com --subject "Report" \
   --message-html ./body.html \
@@ -43,8 +46,9 @@ sendEmail --new-list clients
 # Reads: __sendEmail__clients-emails.txt, __sendEmail__clients-names.txt
 # Creates: lists/clients.json
 
-# Copy tool to project (excludes credentials)
+# Copy tool to project (excludes credentials, uses as local config root)
 sendEmail --copy ./my-project
+# Then: running sendEmail from ./my-project/ uses ./my-project/sendEmail/config/
 
 # Show full help
 sendEmail -h
@@ -80,6 +84,7 @@ sendEmail --test
 | `--attach-cid <cid...>` | | mixed | Inline image CID(s) |
 | `--attach-content-disp <v...>` | | mixed | `inline` or `attachment` |
 | `--email-list <name>` | | repetitive | Bulk list from `lists/` |
+| `--send-all` | | configurable | Send one email to all list contacts |
 | `--new-list <name>` | | aggressive | Create list from tool files |
 | `--list-tool-path <path>` | | passive | Path to tool files |
 
@@ -133,12 +138,61 @@ config/
 │   ├── _default.js        # Required default account
 │   └── myaccount.js       # Additional accounts
 ├── emails/
-│   └── billing/
-│       ├── email.json     # Email metadata (to, subject, html, etc.)
-│       ├── email.js       # Attachment configuration
+│   └── billing/           # One folder per email template
+│       ├── email.json     # Email metadata (to, subject, html, attachments, globals, etc.)
+│       ├── email.js       # Attachment configuration (exports emailAttachments)
 │       └── html/
 │           └── template.htm
 └── globals/
     └── footer/
-        └── global.js      # Reusable global attachments
+        └── global.js      # Reusable global attachments (exports globalAttachments)
 ```
+
+### email.json — `attachments` property
+
+References the `emailAttachments` export from the paired `email.js`:
+
+```json
+"attachments": "{email.emailAttachments}"
+```
+
+`email` = `email.js` in the same folder · `emailAttachments` = the named export.
+
+### email.js — attachment array
+
+```js
+import { globalAttachments as footerAttachments } from '../../globals/footer/global.js';
+
+export const emailAttachments = [
+  { filename: 'Report.pdf', path: 'attachments/Report.pdf' },
+  { filename: 'logo.jpg', path: 'img/logo.jpg', contentDisposition: 'inline', cid: 'logo@example.local' },
+  ...footerAttachments,  // merge in global attachments
+];
+```
+
+> Every `config/emails/<folderName>/` must contain both `email.js` and `email.json`.
+
+### email.json — `sendAll` configuration
+
+Send one email to all contacts on a list:
+
+```json
+{
+  "sendAll": true,
+  "emailList": "billing"
+}
+```
+
+Or with inline contacts:
+
+```json
+{
+  "sendAll": true,
+  "email-list": [
+    { "email": "john@site.com", "name": "John" },
+    { "email": "jane@site.com", "name": "Jane" }
+  ]
+}
+```
+
+Without `sendAll`, `emailList` / `email-list` triggers one-email-per-contact (repetitive) mode.

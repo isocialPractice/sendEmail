@@ -5,7 +5,7 @@
   "replyTo": "_default",
   "subject": "CHANGE_MESSAGE_HEADER",
   "html": ["html_a", "html_b"],
-  "attachments": "emailAttachments",
+  "attachments": "{email.emailAttachments}",
   "globals": ["footer"],
   "dsn": {
     "id": "DSN_ID",

@@ -84,6 +84,31 @@ export async function confirmBulkSend(
 }
 
 /**
+ * Prompt for confirmation before sending one email to all contacts on a list.
+ * Shows list info and count before confirming.
+ */
+export async function confirmSendAll(
+  listName: string,
+  count: number,
+  force = false
+): Promise<boolean> {
+  if (force) return true;
+
+  console.log();
+  console.log(chalk.bold('Send-All Preview:'));
+  console.log(chalk.gray('─'.repeat(50)));
+  console.log(`  ${chalk.cyan('List:    ')} ${listName}`);
+  console.log(`  ${chalk.cyan('Count:   ')} ${count} recipients`);
+  console.log(`  ${chalk.cyan('Mode:    ')} One email to all recipients`);
+  console.log(chalk.gray('─'.repeat(50)));
+  console.log();
+  console.log(chalk.yellow(`⚠  This will send 1 email addressed to all ${count} recipients.`));
+  console.log();
+
+  return askYesNo(`Send to all ${count} recipients in one email?`);
+}
+
+/**
  * Format one or more email addresses for display.
  */
 function formatAddresses(addresses: string | string[]): string {

@@ -5,10 +5,11 @@
  */
 
 import path from 'path';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { parseArguments } from './parser.js';
 import { printHelp } from './help.js';
-import { confirmSend, confirmBulkSend } from './prompts.js';
+import { confirmSend, confirmBulkSend, confirmSendAll } from './prompts.js';
 import { EmailEngine, createEngineConfig } from '../core/engine.js';
 import { ListGenerator } from '../tools/list-generator.js';
 import { CopyTool } from '../tools/copy-tool.js';
@@ -18,18 +19,28 @@ import { TemplateEngine } from '../core/template-engine.js';
 import { handleError } from '../utils/error-handler.js';
 import { info, success, error as logError, warn } from '../utils/logger.js';
 import { SendMode } from '../core/types.js';
-import type { EmailConfig, Attachment, TemplateVariables } from '../core/types.js';
+import type { EmailConfig, Attachment, TemplateVariables, EmailContact, EmailList } from '../core/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** The installed/linked package root (dist/cli/ → dist/ → root). */
+function packageRoot(): string {
+  return path.resolve(__dirname, '..', '..');
+}
+
 /**
- * Determine the root path of the sendEmail tool.
- * Uses the directory containing the running script.
+ * Resolve config root for email operations.
+ * Checks for a local sendEmail copy in the calling directory (created via
+ * --copy) and uses it if found. Checks CWD/sendEmail/ first, then CWD
+ * itself, before falling back to the npm-linked package root.
  */
 function findRootPath(): string {
-  // Walk up from __dirname (dist/cli/) to find root
-  return path.resolve(__dirname, '..', '..');
+  const cwd = process.cwd();
+  const sub = path.join(cwd, 'sendEmail');
+  if (existsSync(path.join(sub, 'config', 'emails'))) return sub;
+  if (existsSync(path.join(cwd, 'config', 'emails'))) return cwd;
+  return packageRoot();
 }
 
 /**
@@ -46,9 +57,19 @@ export async function run(argv?: string[]): Promise<void> {
 
   // ── Tool: Copy ────────────────────────────────────────────────────────────
   if (opts.copy !== undefined) {
+    const cwd = process.cwd();
+    const cwdName = path.basename(cwd);
+    const parentName = path.basename(path.dirname(cwd));
+
+    if (cwdName === 'sendEmail' || parentName === 'sendEmail') {
+      logError('Cannot run --copy from inside the sendEmail tool directory.');
+      logError('Navigate to a different directory first, then run: sendEmail --copy');
+      process.exit(1);
+    }
+
     const copyTool = new CopyTool();
-    const dest = opts.copy || process.cwd();
-    await copyTool.copy(findRootPath(), dest);
+    const dest = typeof opts.copy === 'string' ? opts.copy : path.join(cwd, 'sendEmail');
+    await copyTool.copy(packageRoot(), dest);
     return;
   }
 
@@ -116,37 +137,132 @@ export async function run(argv?: string[]): Promise<void> {
     return;
   }
 
+  // ── Load email config (needed before mode branching for config-based lists) ──
+
+  let emailConfig: EmailConfig = {};
+
+  if (opts.configEmail) {
+    emailConfig = await engine.loadEmailConfig(opts.configEmail);
+  }
+
+  // Resolve effective list source: CLI --email-list > config emailList > config email-list (inline)
+  const effectiveListName = opts.emailList ?? emailConfig.emailList;
+  const inlineList: EmailContact[] | undefined = emailConfig['email-list'];
+  const hasList = !!(effectiveListName || inlineList);
+
+  // Resolve sendAll: CLI --send-all > config sendAll
+  const sendAll = opts.sendAll || emailConfig.sendAll === true;
+
+  // Load the email list (from file or inline)
+  let emailList: EmailList | undefined;
+
+  if (effectiveListName) {
+    emailList = await engine.loadEmailList(effectiveListName);
+  } else if (inlineList) {
+    emailList = { 'email-list': inlineList };
+  }
+
+  // Build overrides from CLI options
+  const overrides = buildOverrides(opts);
+
+  // Load attachments (shared by all list-based and normal modes)
+  let attachments: Attachment[] = [];
+
+  if (opts.configEmail) {
+    const configAtts = await engine.loadEmailAttachments(opts.configEmail);
+    attachments = [...attachments, ...configAtts];
+  }
+
+  const cliAtts = attachmentLoader.buildFromCLI({
+    attachFile: opts.attachFile,
+    attachPath: opts.attachPath,
+    attachCid: opts.attachCid,
+    attachContentDisp: opts.attachContentDisp,
+  });
+
+  attachments = [...attachments, ...cliAtts];
+
+  if (attachments.length > 0) {
+    overrides.attachments = attachments;
+  }
+
+  // ── Send-All Mode ──────────────────────────────────────────────────────────
+  if (sendAll && hasList && emailList) {
+    if (!opts.configEmail) {
+      logError('--config-email is required when using --send-all');
+      process.exit(1);
+    }
+
+    const contacts = emailList['email-list'];
+    const count = contacts.length;
+    const listSource = effectiveListName ?? 'embedded';
+
+    const confirmed = await confirmSendAll(listSource, count, opts.force);
+    if (!confirmed) {
+      info('Send cancelled.');
+      return;
+    }
+
+    // Collect all recipient emails
+    const allRecipients = contacts.map(c => c.email);
+
+    // Build template variables without contact-specific vars
+    const vars: TemplateVariables = templateEngine.buildSingleVars(
+      allRecipients[0] ?? '',
+      opts.subject ?? emailConfig.subject
+    );
+
+    // Build message with all recipients in "to"
+    const sendAllOverrides = { ...overrides, to: allRecipients };
+    const message = await engine.buildMessage(emailConfig, vars, sendAllOverrides);
+
+    // Strip CH-EMAILONLIST placeholder (not applicable in send-all mode)
+    if (message.html) {
+      message.html = message.html.replace(/ CH-EMAILONLIST/g, '');
+      message.html = message.html.replace(/CH-EMAILONLIST/g, '');
+    }
+    if (message.text) {
+      message.text = message.text.replace(/ CH-EMAILONLIST/g, '');
+      message.text = message.text.replace(/CH-EMAILONLIST/g, '');
+    }
+    message.subject = message.subject.replace(/ CH-EMAILONLIST/g, '');
+    message.subject = message.subject.replace(/CH-EMAILONLIST/g, '');
+
+    info(`Sending one email to ${count} recipients from list '${listSource}'...`);
+
+    const result = await engine.sendEmail(message);
+
+    if (result.success) {
+      success(`Email sent to ${count} recipients (${result.messageId})`);
+    } else {
+      logError(`Failed to send: ${result.error?.message}`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (sendAll && !hasList) {
+    logError('--send-all requires an email list (--email-list or emailList/email-list in email.json)');
+    process.exit(1);
+  }
+
   // ── Repetitive Mode ───────────────────────────────────────────────────────
-  if (opts.mode === SendMode.REPETITIVE && opts.emailList) {
+  if (hasList && emailList) {
     if (!opts.configEmail) {
       logError('--config-email is required for repetitive mode (--email-list)');
       process.exit(1);
     }
 
-    const emailConfig = await engine.loadEmailConfig(opts.configEmail);
-    const emailList = await engine.loadEmailList(opts.emailList);
     const count = emailList['email-list'].length;
+    const listSource = effectiveListName ?? 'embedded';
 
-    const confirmed = await confirmBulkSend(opts.emailList, count, opts.force);
+    const confirmed = await confirmBulkSend(listSource, count, opts.force);
     if (!confirmed) {
       info('Bulk send cancelled.');
       return;
     }
 
-    // Build overrides from CLI options
-    const overrides = buildOverrides(opts);
-    const extraAttachments = attachmentLoader.buildFromCLI({
-      attachFile: opts.attachFile,
-      attachPath: opts.attachPath,
-      attachCid: opts.attachCid,
-      attachContentDisp: opts.attachContentDisp,
-    });
-
-    if (extraAttachments.length > 0) {
-      overrides.attachments = extraAttachments;
-    }
-
-    info(`Sending to ${count} recipients from list '${opts.emailList}'...`);
+    info(`Sending to ${count} recipients from list '${listSource}'...`);
 
     const result = await engine.sendBulk(
       emailConfig,
@@ -172,43 +288,12 @@ export async function run(argv?: string[]): Promise<void> {
 
   // ── Normal Mode ───────────────────────────────────────────────────────────
 
-  // Build base email config
-  let emailConfig: EmailConfig = {};
-
-  if (opts.configEmail) {
-    emailConfig = await engine.loadEmailConfig(opts.configEmail);
-  }
-
-  // Apply CLI overrides
-  const overrides = buildOverrides(opts);
-
   // Build template variables for single send
   const to = Array.isArray(overrides.to ?? emailConfig.to)
     ? (overrides.to ?? emailConfig.to as string[])[0] ?? ''
     : (overrides.to ?? emailConfig.to ?? '') as string;
 
   const vars: TemplateVariables = templateEngine.buildSingleVars(to, opts.subject ?? emailConfig.subject);
-
-  // Load attachments
-  let attachments: Attachment[] = [];
-
-  if (opts.configEmail) {
-    const configAtts = await getConfigAttachments(engine, opts.configEmail, engineConfig);
-    attachments = [...attachments, ...configAtts];
-  }
-
-  const cliAtts = attachmentLoader.buildFromCLI({
-    attachFile: opts.attachFile,
-    attachPath: opts.attachPath,
-    attachCid: opts.attachCid,
-    attachContentDisp: opts.attachContentDisp,
-  });
-
-  attachments = [...attachments, ...cliAtts];
-
-  if (attachments.length > 0) {
-    overrides.attachments = attachments;
-  }
 
   // Build and preview message
   const message = await engine.buildMessage(emailConfig, vars, overrides);
@@ -248,23 +333,6 @@ function buildOverrides(opts: ReturnType<typeof parseArguments>): Partial<EmailC
   else if (opts.messageFile) overrides.html = opts.messageFile; // engine handles type detection
 
   return overrides;
-}
-
-/**
- * Load email.js attachments for a configured email.
- */
-async function getConfigAttachments(
-  engine: EmailEngine,
-  configEmail: string,
-  engineConfig: ReturnType<typeof createEngineConfig>
-): Promise<Attachment[]> {
-  try {
-    const { ConfigLoader } = await import('../core/config-loader.js');
-    const loader = new ConfigLoader(engineConfig);
-    return loader.loadEmailAttachments(configEmail);
-  } catch {
-    return [];
-  }
 }
 
 // Run when called directly (not when imported by bin/sendEmail.js)

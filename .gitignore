@@ -35,3 +35,8 @@ Thumbs.db
 
 # Claude Code workspace
 .claude/
+
+# Remaining configurations
+lists/*
+__sendEmail__*
+config/*

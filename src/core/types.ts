@@ -53,6 +53,9 @@ export interface EmailConfig {
   attachments?: string | Attachment[];  // String key name from email.js, OR pre-loaded array
   globals?: string[];        // Global template names to include (e.g., ["footer"])
   dsn?: DsnConfig;
+  sendAll?: boolean;         // Send one email to all contacts on the list at once
+  emailList?: string;        // List file name from lists/ (e.g., "billing")
+  'email-list'?: EmailContact[];  // Inline contact list embedded in email.json
 }
 
 /**
@@ -136,6 +139,7 @@ export interface CLIOptions {
 
   // List Options
   emailList?: string;            // --email-list [listName] (triggers repetitive mode)
+  sendAll?: boolean;             // --send-all (send one email to all contacts on the list)
 
   // Tool Options
   newList?: string;              // --new-list [listName]

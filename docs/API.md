@@ -224,6 +224,9 @@ interface EmailConfig {
   attachments?: string;
   globals?: string[];         // Global template names
   dsn?: DsnConfig;
+  sendAll?: boolean;          // Send one email to all contacts on the list
+  emailList?: string;         // List file name from lists/
+  'email-list'?: EmailContact[]; // Inline contact list
 }
 ```
 

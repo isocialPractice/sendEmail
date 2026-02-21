@@ -177,7 +177,66 @@ Or using legacy placeholders:
 <p>Dear CH-EMAILONLIST,</p>
 ```
 
-### Example 13: Create an Email List from Tool Files
+### Example 13: Send-All — One Email to All List Contacts
+
+Send one email addressed to everyone on a list:
+
+```bash
+sendEmail \
+  --config-email billing \
+  --email-list clients \
+  --send-all \
+  --force
+```
+
+This sends **1 email** with all contacts in the `To:` field.
+The `CH-EMAILONLIST` placeholder is stripped since per-contact personalization
+does not apply.
+
+### Example 14: Send-All via email.json Configuration
+
+Set `sendAll` and `emailList` directly in `email.json`:
+
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "from": "_default",
+  "subject": "Company Announcement",
+  "html": "html_a",
+  "sendAll": true,
+  "emailList": "billing"
+}
+```
+
+Then run:
+
+```bash
+sendEmail --config-email billing --force
+```
+
+### Example 15: Send-All with Inline Contact List
+
+Embed the contact list directly in `email.json`:
+
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "from": "_default",
+  "subject": "Team Meeting Notes",
+  "html": "html_a",
+  "sendAll": true,
+  "email-list": [
+    { "email": "john_a@site.com", "name": "John Apple" },
+    { "email": "jane_a@site.com", "name": "Jane Apple" }
+  ]
+}
+```
+
+```bash
+sendEmail --config-email meeting-notes --force
+```
+
+### Example 16: Create an Email List from Tool Files
 
 Create two tool files in your working directory:
 
@@ -208,7 +267,7 @@ Then send:
 sendEmail --config-email newsletter --email-list newsletter --force
 ```
 
-### Example 14: Billing Statement Workflow
+### Example 17: Billing Statement Workflow
 
 ```bash
 # 1. Create client list
@@ -224,7 +283,7 @@ sendEmail --config-email billing --email-list clients
 sendEmail --config-email billing --email-list clients --force
 ```
 
-### Example 15: Copy Tool to a Project
+### Example 18: Copy Tool to a Project
 
 ```bash
 # Copy sendEmail to a new project directory
@@ -242,7 +301,7 @@ npm run build
 
 ## Automation Examples
 
-### Example 16: Scripted Daily Email (Bash)
+### Example 19: Scripted Daily Email (Bash)
 
 ```bash
 #!/bin/bash
@@ -254,7 +313,7 @@ sendEmail \
   --force
 ```
 
-### Example 17: Notification After a Task
+### Example 20: Notification After a Task
 
 ```bash
 # After a long-running job:
@@ -262,7 +321,7 @@ sendEmail \
   -t admin@company.com "Backup completed successfully on $(date)"
 ```
 
-### Example 18: Batch Processing with a List
+### Example 21: Batch Processing with a List
 
 ```bash
 # Generate list from data export
@@ -280,7 +339,7 @@ sendEmail --config-email monthly-report --email-list report --force
 
 ## Error Recovery Examples
 
-### Example 19: Test Before Sending
+### Example 22: Test Before Sending
 
 Verify SMTP connectivity and configuration first:
 
@@ -288,7 +347,7 @@ Verify SMTP connectivity and configuration first:
 sendEmail --test
 ```
 
-### Example 20: Preview Before Bulk Send
+### Example 23: Preview Before Bulk Send
 
 Send to yourself first to preview:
 

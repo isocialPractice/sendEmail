@@ -98,6 +98,13 @@ export class EmailEngine {
   }
 
   /**
+   * Load emailAttachments from config/emails/<emailName>/email.js
+   */
+  async loadEmailAttachments(emailName: string): Promise<Attachment[]> {
+    return this.configLoader.loadEmailAttachments(emailName);
+  }
+
+  /**
    * Build a complete nodemailer-ready EmailMessage from config and template variables.
    */
   async buildMessage(

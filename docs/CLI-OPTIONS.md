@@ -67,6 +67,10 @@ sendEmail -c                          # copies to CWD
 > **Important:** `config/accounts/` is **never** copied — it contains sensitive credentials.
 > After copying, create your own `config/accounts/_default.js`.
 
+> **Local override (npm link):** If `sendEmail` is invoked via `npm link` from a directory
+> that contains a sendEmail copy (`sendEmail/config/emails/` or `./config/emails/`), that
+> local copy is used as the config root instead of the linked package.
+
 ---
 
 ### `-h, --help [section]`
@@ -326,6 +330,28 @@ sendEmail --config-email billing --email-list clients --force
 
 ---
 
+### `--send-all`
+
+**Type:** `configurable`
+
+Send one email to all contacts on the list at once, instead of sending individual
+emails to each contact. All recipients appear in the `To:` field of a single email.
+
+Requires a list source: `--email-list` on CLI, or `emailList` / `email-list` in `email.json`.
+
+```bash
+sendEmail --config-email billing --email-list clients --send-all
+sendEmail --config-email billing --email-list clients --send-all --force
+```
+
+- The `CH-EMAILONLIST` placeholder is stripped (replaced with empty string) since
+  per-contact personalization does not apply in send-all mode
+- Can also be configured in `email.json` with `"sendAll": true`
+- When `sendAll` is set in `email.json`, the list source can also come from
+  `"emailList"` or `"email-list"` in the same config file
+
+---
+
 ## Tool Options
 
 Tool options disable email sending. They are used for list management and maintenance.
@@ -383,3 +409,119 @@ Use these variables in subject lines, HTML templates, and other configurable tex
 - `CH-EMAILONLIST` → contact name
 - `CHANGE_SEND_TO` → contact email
 - `CHANGE_MESSAGE_HEADER` → email subject
+
+---
+
+## Config File: email.json
+
+Properties available in `config/emails/<name>/email.json`:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `to` | `string \| string[]` | Recipient address(es). Use `CHANGE_SEND_TO` as a placeholder. |
+| `bcc` | `string \| string[]` | BCC address(es). Use `CHANGE_BCC` as a placeholder. |
+| `from` | `string` | Account name (e.g. `"_default"`) or an explicit email address. |
+| `replyTo` | `string \| string[]` | Reply-to address(es). |
+| `subject` | `string` | Subject line. Supports template variables (e.g. `{{contact.name}}`). |
+| `html` | `string \| string[]` | HTML file name(s) relative to the email's `html/` folder, or a full path from root. |
+| `text` | `string` | Plain-text message file path. |
+| `attachments` | `string` | Reference to the `emailAttachments` export in the paired `email.js`. |
+| `globals` | `string[]` | Global attachment group names to include (e.g. `["footer"]`). |
+| `dsn` | `object` | Delivery Status Notification config (`id`, `return`, `notify`, `recipient`). |
+| `sendAll` | `boolean` | Send one email to all contacts on the list. Requires `emailList` or `email-list`. |
+| `emailList` | `string` | List file name from `lists/` (e.g. `"billing"`). |
+| `email-list` | `object[]` | Inline contact list: `[{"email": "...", "name": "..."}, ...]`. |
+
+### `attachments` — syntax
+
+The `attachments` property is a reference to the `emailAttachments` export
+from the paired `email.js` in the same folder.
+
+**Explicit reference notation (current):**
+```json
+"attachments": "{email.emailAttachments}"
+```
+- `email` — refers to `email.js` in the same config folder
+- `emailAttachments` — the named export in that file
+
+**Legacy shorthand (still accepted):**
+```json
+"attachments": "emailAttachments"
+```
+
+Both forms have the same effect. The explicit `{email.emailAttachments}` notation
+is preferred because it clearly indicates the source file and export name.
+
+The `emailAttachments` array in `email.js` is the authoritative list of attachments.
+Example (`config/emails/billing/email.js`):
+
+```js
+import { globalAttachments as footerAttachments } from '../../globals/footer/global.js';
+
+export const emailAttachments = [
+  {
+    filename: 'Billing Statement.pdf',
+    path: 'attachments/Billing Statement.pdf',
+  },
+  {
+    filename: 'img.jpg',
+    path: 'img/img.jpg',
+    contentDisposition: 'inline',
+    cid: 'img@billing.local',
+  },
+  // Include footer global attachments (logo, map)
+  ...footerAttachments,
+];
+```
+
+> Each `config/emails/<folderName>/` must contain both `email.js` and `email.json`.
+
+### `sendAll` — configuration
+
+The `sendAll` property enables sending one email addressed to all contacts on a list,
+instead of sending a separate email to each contact.
+
+**Requirements:**
+- `sendAll` must be `true`
+- A list source must be available: either `emailList` (file reference) or `email-list` (inline)
+- If `emailList` or `email-list` is present without `sendAll`, default behaviour applies (one email per contact)
+
+**Using `emailList` (reference to a list file):**
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "from": "_default",
+  "subject": "Team Update",
+  "html": "html_a",
+  "sendAll": true,
+  "emailList": "billing"
+}
+```
+This loads `lists/billing.json` and sends one email to all contacts.
+
+**Using `email-list` (inline contacts):**
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "from": "_default",
+  "subject": "Team Update",
+  "html": "html_a",
+  "sendAll": true,
+  "email-list": [
+    { "email": "john_a@site.com", "name": "John Apple" },
+    { "email": "jane_a@site.com", "name": "Jane Apple" }
+  ]
+}
+```
+
+**Without `sendAll` (default behaviour):**
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "from": "_default",
+  "subject": "Invoice for {{contact.name}}",
+  "html": "html_a",
+  "emailList": "billing"
+}
+```
+This sends one email per contact (repetitive mode) using the `billing` list.

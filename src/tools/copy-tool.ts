@@ -2,6 +2,17 @@
  * copy-tool.ts
  * Copies the sendEmail tool to another directory.
  * IMPORTANT: Excludes config/accounts/ (contains sensitive credentials).
+ *
+ * @example
+ * ```bash
+ * sendEmail --copy
+ * ```
+ * Copies the tool into a new `sendEmail/` directory inside the current working directory.
+ *
+ * ```bash
+ * sendEmail --copy /path/to/destination
+ * ```
+ * Copies the tool to an explicit destination path.
  */
 
 import path from 'path';
@@ -14,20 +25,25 @@ const COPY_EXCLUDES = [
   'config/accounts',  // Contains sensitive credentials - NEVER copy
   'node_modules',
   'dist',
+  'docs',
   '.git',
   '.backups',
   '.tmp',
+  'tmpclaude*',
+  '__sendEmail__*'
 ];
 
 // Top-level items to exclude
 const ROOT_EXCLUDES = [
   'node_modules',
   'dist',
+  'docs',
   '.git',
   '.gitignore',
   '.backups',
   '.tmp',
-  'tmpclaude',
+  'tmpclaude*',
+  '__sendEmail__*'
 ];
 
 export class CopyTool {
@@ -42,6 +58,16 @@ export class CopyTool {
       throw new FileError(
         `Source directory not found: ${sourceRoot}`,
         [`The sendEmail root path does not exist: ${sourceRoot}`]
+      );
+    }
+
+    if (await exists(resolvedDest)) {
+      throw new FileError(
+        `Destination already exists: ${resolvedDest}`,
+        [
+          `Remove or rename the existing directory first:`,
+          `  rm -rf "${resolvedDest}"`,
+        ]
       );
     }
 
