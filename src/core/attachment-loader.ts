@@ -5,6 +5,7 @@
  */
 
 import path from 'path';
+import { existsSync } from 'fs';
 import { exists } from '../utils/file-utils.js';
 import { warn, debug } from '../utils/logger.js';
 import type { Attachment, CLIAttachment, EngineConfig } from './types.js';
@@ -41,6 +42,18 @@ export class AttachmentLoader {
     }
 
     return missing;
+  }
+
+  /**
+   * Resolve attachment paths relative to a specific base directory.
+   * Used by --global-config to resolve attachment paths relative to the
+   * config file's own directory, regardless of CWD or rootPath.
+   */
+  resolveAttachmentsFromBase(attachments: Attachment[], basePath: string): Attachment[] {
+    return attachments.map(att => ({
+      ...att,
+      path: path.isAbsolute(att.path) ? att.path : path.resolve(basePath, att.path),
+    }));
   }
 
   /**
@@ -95,10 +108,15 @@ export class AttachmentLoader {
   }
 
   /**
-   * Resolve a path: if relative, resolve against the project root.
+   * Resolve a path: if relative, prefer CWD (caller's working directory),
+   * then fall back to the project root (attachments/ folder, etc.).
    */
   private resolvePath(filePath: string): string {
     if (path.isAbsolute(filePath)) return filePath;
+
+    const cwdPath = path.resolve(process.cwd(), filePath);
+    if (existsSync(cwdPath)) return cwdPath;
+
     return path.resolve(this.config.rootPath, filePath);
   }
 }

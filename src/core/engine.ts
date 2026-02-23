@@ -6,6 +6,7 @@
 
 import nodemailer from 'nodemailer';
 import path from 'path';
+import { existsSync } from 'fs';
 import { ConfigLoader } from './config-loader.js';
 import { TemplateEngine } from './template-engine.js';
 import { AttachmentLoader } from './attachment-loader.js';
@@ -102,6 +103,15 @@ export class EmailEngine {
    */
   async loadEmailAttachments(emailName: string): Promise<Attachment[]> {
     return this.configLoader.loadEmailAttachments(emailName);
+  }
+
+  /**
+   * Load global attachments from an explicit resolved file path.
+   * Path resolution is handled by the caller; attachment paths inside the
+   * config are NOT resolved here — use AttachmentLoader.resolveAttachmentsFromBase().
+   */
+  async loadGlobalAttachmentsFromFile(configFilePath: string): Promise<Attachment[]> {
+    return this.configLoader.loadGlobalAttachmentsFromFile(configFilePath);
   }
 
   /**
@@ -329,10 +339,8 @@ export class EmailEngine {
         // It's already HTML content, not a file reference
         content = ref;
       } else {
-        // Treat as a file name in the email's html/ directory
-        // emailConfig doesn't have a name here - we need it from context
-        // For now, load as a raw file path relative to root
-        const filePath = path.resolve(this.config.rootPath, ref);
+        // Resolve path: prefer caller CWD when the file exists there, then fallback to rootPath.
+        const filePath = this.resolveInputPath(ref);
         content = await readFile(filePath);
       }
 
@@ -346,7 +354,7 @@ export class EmailEngine {
     // If it looks like a file path, load it
     if (!textRef.includes('\n') && textRef.length < 500) {
       try {
-        const filePath = path.resolve(this.config.rootPath, textRef);
+        const filePath = this.resolveInputPath(textRef);
         const content = await readFile(filePath);
         const type = getContentType(filePath);
         if (type === 'markdown') {
@@ -358,5 +366,14 @@ export class EmailEngine {
       }
     }
     return textRef;
+  }
+
+  private resolveInputPath(inputPath: string): string {
+    if (path.isAbsolute(inputPath)) return inputPath;
+
+    const cwdPath = path.resolve(process.cwd(), inputPath);
+    if (existsSync(cwdPath)) return cwdPath;
+
+    return path.resolve(this.config.rootPath, inputPath);
   }
 }

@@ -107,6 +107,8 @@ sendEmail -h options
 sendEmail -h options:configurable
 ```
 
+Relative paths for `--message-file`, `--message-html`, and `--message-text` are resolved from your current working directory first; if no match is found, sendEmail falls back to its config/tool root.
+
 ---
 
 ## Project Structure

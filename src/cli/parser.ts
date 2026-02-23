@@ -47,7 +47,10 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('--attach-file <filename...>', 'Attachment filename(s) [mixed]')
     .option('--attach-path <path...>', 'Attachment path(s) [mixed]')
     .option('--attach-cid <cid...>', 'Content ID(s) for inline images [mixed]')
-    .option('--attach-content-disp <value...>', 'Content disposition(s): inline|attachment [mixed]');
+    .option('--attach-content-disp <value...>', 'Content disposition(s): inline|attachment [mixed]')
+    .option('--global-config <args...>', 'Load a global config by name or path (default resolution) [mixed]')
+    .option('--global-config-root <args...>', 'Load a global config from sendEmail root globals only [mixed]')
+    .option('--global-config-path <args...>', 'Load a global config from CWD path only [mixed]');
 
   // ── List Options ──────────────────────────────────────────────────────────
 
@@ -68,7 +71,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
   program.exitOverride();
 
   try {
-    program.parse(argv);
+    program.parse(normalizeArgv(argv));
   } catch (err: unknown) {
     const error = err as { code?: string; message?: string };
     // commander throws for unknown options - let it propagate
@@ -104,6 +107,9 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     copy: opts['copy'] as string | undefined,
     help: opts['help'] as string | undefined,
     test: opts['test'] as string | undefined,
+    globalConfig: opts['globalConfig'] as string[] | undefined,
+    globalConfigRoot: opts['globalConfigRoot'] as string[] | undefined,
+    globalConfigPath: opts['globalConfigPath'] as string[] | undefined,
   };
 
   // Handle -t / --text (next two positional args after -t)
@@ -146,4 +152,18 @@ function determineSendMode(opts: CLIOptions): SendMode {
 
   // Default to normal
   return SendMode.NORMAL;
+}
+
+/**
+ * Normalize argv to convert --global-config:<switch> colon-syntax to kebab-case
+ * before passing to Commander, which does not support colons in option names.
+ *   --global-config:root  →  --global-config-root
+ *   --global-config:path  →  --global-config-path
+ */
+function normalizeArgv(argv: string[]): string[] {
+  return argv.map(arg => {
+    if (arg === '--global-config:root') return '--global-config-root';
+    if (arg === '--global-config:path') return '--global-config-path';
+    return arg;
+  });
 }

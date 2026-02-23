@@ -152,6 +152,11 @@ export interface CLIOptions {
   help?: string;                 // -h, --help [section] (show help)
   test?: string;                 // --test [unitTest] (run tests)
 
+  // Global Config Options
+  globalConfig?: string[];       // --global-config <args> (default resolution)
+  globalConfigRoot?: string[];   // --global-config:root <args> (sendEmail root only)
+  globalConfigPath?: string[];   // --global-config:path <args> (CWD path only)
+
   // Derived
   mode?: SendMode;               // Determined from options
 }

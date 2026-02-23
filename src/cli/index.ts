@@ -16,7 +16,7 @@ import { CopyTool } from '../tools/copy-tool.js';
 import { TestRunner } from '../tools/test-runner.js';
 import { AttachmentLoader } from '../core/attachment-loader.js';
 import { TemplateEngine } from '../core/template-engine.js';
-import { handleError } from '../utils/error-handler.js';
+import { handleError, ConfigurationError } from '../utils/error-handler.js';
 import { info, success, error as logError, warn } from '../utils/logger.js';
 import { SendMode } from '../core/types.js';
 import type { EmailConfig, Attachment, TemplateVariables, EmailContact, EmailList } from '../core/types.js';
@@ -182,6 +182,20 @@ export async function run(argv?: string[]): Promise<void> {
 
   attachments = [...attachments, ...cliAtts];
 
+  // ── Global Config Attachments (--global-config / :root / :path) ─────────────
+  if (opts.globalConfig?.length) {
+    const gcAtts = await loadGlobalConfigAttachments(opts.globalConfig, 'default', rootPath, engine, attachmentLoader);
+    attachments = [...attachments, ...gcAtts];
+  }
+  if (opts.globalConfigRoot?.length) {
+    const gcAtts = await loadGlobalConfigAttachments(opts.globalConfigRoot, 'root', rootPath, engine, attachmentLoader);
+    attachments = [...attachments, ...gcAtts];
+  }
+  if (opts.globalConfigPath?.length) {
+    const gcAtts = await loadGlobalConfigAttachments(opts.globalConfigPath, 'path', rootPath, engine, attachmentLoader);
+    attachments = [...attachments, ...gcAtts];
+  }
+
   if (attachments.length > 0) {
     overrides.attachments = attachments;
   }
@@ -312,6 +326,124 @@ export async function run(argv?: string[]): Promise<void> {
     logError(`Failed to send: ${result.error?.message}`);
     process.exit(1);
   }
+}
+
+// ─── --global-config Resolution ───────────────────────────────────────────────
+
+type GlobalConfigSwitch = 'default' | 'root' | 'path';
+
+interface ResolvedGlobalConfig {
+  configFilePath: string;
+  assetBasePath: string;
+}
+
+/**
+ * Resolve a --global-config argument to an absolute config file path and
+ * asset base path, applying the requested switch resolution strategy.
+ *
+ * Resolution order (default, no switch):
+ *   1. CWD/config/globals/<arg>/global.js   (copy-location globals, CWD-first)
+ *   2. ROOT/config/globals/<arg>/global.js  (sendEmail root globals)
+ *   3. CWD/<arg>/global.js                  (directory relative to CWD)
+ *   4. CWD/<arg>                            (file relative to CWD)
+ *
+ * :root switch — only steps 1–2 (no CWD directory/file fallback)
+ * :path switch — only steps 3–4 (no sendEmail root globals)
+ */
+async function resolveGlobalConfigArg(
+  arg: string,
+  switchType: GlobalConfigSwitch,
+  rootPath: string
+): Promise<ResolvedGlobalConfig> {
+  const cwd = process.cwd();
+  const fsp = await import('fs/promises');
+
+  async function isDir(p: string): Promise<boolean> {
+    try { return (await fsp.stat(p)).isDirectory(); } catch { return false; }
+  }
+
+  async function isFile(p: string): Promise<boolean> {
+    try { return (await fsp.stat(p)).isFile(); } catch { return false; }
+  }
+
+  if (switchType !== 'path') {
+    // Step 1: CWD copy-location globals (config/globals/<arg>/ relative to CWD)
+    const cwdGlobalDir = path.join(cwd, 'config', 'globals', arg);
+    const cwdGlobalFile = path.join(cwdGlobalDir, 'global.js');
+    if (await isDir(cwdGlobalDir) && await isFile(cwdGlobalFile)) {
+      // Assets resolved relative to CWD (the copy-location root)
+      return { configFilePath: cwdGlobalFile, assetBasePath: cwd };
+    }
+
+    // Step 2: sendEmail root globals (config/globals/<arg>/ relative to rootPath)
+    const rootGlobalDir = path.join(rootPath, 'config', 'globals', arg);
+    const rootGlobalFile = path.join(rootGlobalDir, 'global.js');
+    if (await isDir(rootGlobalDir) && await isFile(rootGlobalFile)) {
+      // Assets resolved relative to sendEmail root (not CWD, not the subfolder)
+      return { configFilePath: rootGlobalFile, assetBasePath: rootPath };
+    }
+  }
+
+  if (switchType !== 'root') {
+    // Step 3: CWD directory — resolve <arg>/global.js
+    const cwdDir = path.resolve(cwd, arg);
+    const cwdDirGlobalFile = path.join(cwdDir, 'global.js');
+    if (await isDir(cwdDir) && await isFile(cwdDirGlobalFile)) {
+      // Assets resolved relative to CWD
+      return { configFilePath: cwdDirGlobalFile, assetBasePath: cwd };
+    }
+
+    // Step 4: CWD file — use <arg> directly as config file
+    const cwdFile = path.resolve(cwd, arg);
+    if (await isFile(cwdFile)) {
+      // Assets resolved relative to CWD
+      return { configFilePath: cwdFile, assetBasePath: cwd };
+    }
+  }
+
+  // Build descriptive error listing everything we checked
+  const checked: string[] = [];
+  if (switchType !== 'path') {
+    checked.push(`${path.join(cwd, 'config', 'globals', arg, 'global.js')} (copy-location globals)`);
+    checked.push(`${path.join(rootPath, 'config', 'globals', arg, 'global.js')} (sendEmail root globals)`);
+  }
+  if (switchType !== 'root') {
+    checked.push(`${path.resolve(cwd, arg, 'global.js')} (CWD directory)`);
+    checked.push(`${path.resolve(cwd, arg)} (CWD file)`);
+  }
+
+  const suggestion =
+    switchType === 'root'
+      ? `Use --global-config (without :root) to also check directories and files relative to your working directory.`
+      : switchType === 'path'
+      ? `Use --global-config (without :path) to also search sendEmail root globals.`
+      : `Ensure the name exists in config/globals/, or provide a valid path relative to your working directory.`;
+
+  throw new ConfigurationError(
+    `Global config '${arg}' not found`,
+    checked.map(c => `Checked: ${c}`),
+    suggestion
+  );
+}
+
+/**
+ * Load and resolve attachments for a list of --global-config arguments.
+ */
+async function loadGlobalConfigAttachments(
+  args: string[],
+  switchType: GlobalConfigSwitch,
+  rootPath: string,
+  engine: EmailEngine,
+  attachmentLoader: AttachmentLoader
+): Promise<Attachment[]> {
+  let result: Attachment[] = [];
+  for (const arg of args) {
+    const { configFilePath, assetBasePath } = await resolveGlobalConfigArg(arg, switchType, rootPath);
+    const raw = await engine.loadGlobalAttachmentsFromFile(configFilePath);
+    const resolved = attachmentLoader.resolveAttachmentsFromBase(raw, assetBasePath);
+    result = [...result, ...resolved];
+  }
+  return result;
 }
 
 /**

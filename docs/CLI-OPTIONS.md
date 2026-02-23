@@ -186,6 +186,9 @@ sendEmail --message-file ./newsletter.md
 sendEmail --message-file ./announcement.txt
 ```
 
+- Relative paths are resolved from your current working directory first (if the file exists there)
+- If not found in CWD, `sendEmail` falls back to the tool/config root path
+
 ---
 
 ### `--message-html <path>`
@@ -198,6 +201,9 @@ Explicitly set an HTML message file (regardless of extension).
 sendEmail --message-html ./template.htm
 ```
 
+- Relative paths are resolved from your current working directory first (if the file exists there)
+- If not found in CWD, `sendEmail` falls back to the tool/config root path
+
 ---
 
 ### `--message-text <path>`
@@ -209,6 +215,9 @@ Explicitly set a plain text message file (regardless of extension).
 ```bash
 sendEmail --message-text ./message.txt
 ```
+
+- Relative paths are resolved from your current working directory first (if the file exists there)
+- If not found in CWD, `sendEmail` falls back to the tool/config root path
 
 ---
 
@@ -313,6 +322,78 @@ Content disposition(s) for attachments. Values: `attachment` (default) or `inlin
 ```bash
 sendEmail --attach-content-disp "inline" --attach-path "./img/logo.png" --attach-cid "logo@company.com"
 ```
+
+---
+
+### `--global-config <args...>`
+
+**Type:** `mixed`
+
+Load one or more global attachment config files by name or path and merge their
+attachments into the current email. Multiple names can be space-separated.
+
+```bash
+sendEmail --config-email billing --global-config footer --send-to client@example.com
+sendEmail --config-email newsletter --global-config footer banner --send-to list@example.com
+sendEmail --send-to client@example.com --global-config ./myGlobals.js
+sendEmail --send-to client@example.com --global-config myGlobalsFolder/
+```
+
+**Resolution order** (applied per argument, first match wins):
+
+| Priority | Checks | Asset base path |
+|----------|--------|-----------------|
+| 1 | `<CWD>/config/globals/<arg>/global.js` (copy-location globals) | `<CWD>/` |
+| 2 | `<sendEmailRoot>/config/globals/<arg>/global.js` (sendEmail root globals) | `<sendEmailRoot>/` |
+| 3 | `<CWD>/<arg>/global.js` (directory relative to CWD) | `<CWD>/` |
+| 4 | `<CWD>/<arg>` (file relative to CWD) | `<CWD>/` |
+
+> **Asset paths:** Attachment paths in the config file (e.g. `img/logo.jpg`) are resolved
+> relative to the root of whatever location the config was found in — the CWD for
+> copy-location and CWD-relative lookups, or the sendEmail root for root globals.
+
+The global config file must export a `globalAttachments` array:
+
+```js
+// config/globals/footer/global.js
+export const globalAttachments = [
+  {
+    filename: 'Logo',
+    path: 'img/logo.jpg',          // relative to this file's directory
+    contentDisposition: 'inline',
+    cid: 'logo@footer.local',
+  },
+];
+```
+
+**Switch parameters** — specify `--global-config:<switch>` to restrict resolution:
+
+#### `--global-config:root <args...>`
+
+Only resolve from sendEmail root globals (copy-location or sendEmail root `config/globals/`).
+Does **not** fall back to CWD directories or files.
+
+```bash
+sendEmail --config-email billing --global-config:root footer --send-to client@example.com
+```
+
+- Resolves `CWD/config/globals/<arg>/global.js` first (copy-location priority)
+- Falls back to `<sendEmailRoot>/config/globals/<arg>/global.js`
+- Throws an error if not found in either location; no CWD fallback
+
+#### `--global-config:path <args...>`
+
+Only resolve relative to the current working directory.
+Does **not** search sendEmail root globals.
+
+```bash
+sendEmail --send-to client@example.com --global-config:path ./footerAssets/
+sendEmail --send-to client@example.com --global-config:path fileName.js
+```
+
+- Checks `<CWD>/<arg>/global.js` if `<arg>` is a directory
+- Checks `<CWD>/<arg>` if `<arg>` is a file
+- Throws an error if not found; no sendEmail globals fallback
 
 ---
 

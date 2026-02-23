@@ -173,6 +173,34 @@ export class ConfigLoader {
   }
 
   /**
+   * Load global attachments from an explicit resolved file path.
+   * Unlike loadGlobalAttachments(), path resolution is done by the caller.
+   * Attachment paths are NOT resolved here — the caller handles that.
+   */
+  async loadGlobalAttachmentsFromFile(configFilePath: string): Promise<Attachment[]> {
+    if (!(await exists(configFilePath))) {
+      throw new ConfigurationError(
+        `Global config file not found`,
+        [`Expected file: ${configFilePath}`]
+      );
+    }
+
+    debug(`Loading global attachments from file: ${configFilePath}`);
+
+    try {
+      const fileUrl = 'file://' + configFilePath.replace(/\\/g, '/');
+      const module = await import(fileUrl) as Record<string, unknown>;
+      return (module.globalAttachments as Attachment[]) ?? [];
+    } catch (err) {
+      const error = err as Error;
+      throw new ConfigurationError(
+        `Failed to load global attachments`,
+        [error.message, `File: ${configFilePath}`]
+      );
+    }
+  }
+
+  /**
    * Load an HTML file from config/emails/<emailName>/html/<fileName>
    */
   async loadEmailHtml(emailName: string, fileName: string): Promise<string> {
