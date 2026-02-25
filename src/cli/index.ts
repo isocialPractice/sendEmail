@@ -18,6 +18,7 @@ import { AttachmentLoader } from '../core/attachment-loader.js';
 import { TemplateEngine } from '../core/template-engine.js';
 import { handleError, ConfigurationError } from '../utils/error-handler.js';
 import { info, success, error as logError, warn } from '../utils/logger.js';
+import { writeLog, isLogEnabled } from '../utils/email-logger.js';
 import { SendMode } from '../core/types.js';
 import type { EmailConfig, Attachment, TemplateVariables, EmailContact, EmailList } from '../core/types.js';
 
@@ -130,6 +131,9 @@ export async function run(argv?: string[]): Promise<void> {
     const result = await engine.sendEmail(message as Parameters<typeof engine.sendEmail>[0]);
     if (result.success) {
       success(`Email sent to ${address} (${result.messageId})`);
+      if (opts.log) {
+        await writeLog(engineConfig.logsPath, { opts, message: message as import('../core/types.js').EmailMessage, sendResult: result });
+      }
     } else {
       logError(`Failed to send: ${result.error?.message}`);
       process.exit(1);
@@ -149,6 +153,9 @@ export async function run(argv?: string[]): Promise<void> {
   const effectiveListName = opts.emailList ?? emailConfig.emailList;
   const inlineList: EmailContact[] | undefined = emailConfig['email-list'];
   const hasList = !!(effectiveListName || inlineList);
+
+  // Resolve effectiveLog: CLI --log > config log: true/"true"
+  const effectiveLog = isLogEnabled(opts, emailConfig.log);
 
   // Resolve sendAll: CLI --send-all > config sendAll
   const sendAll = opts.sendAll || emailConfig.sendAll === true;
@@ -248,6 +255,9 @@ export async function run(argv?: string[]): Promise<void> {
 
     if (result.success) {
       success(`Email sent to ${count} recipients (${result.messageId})`);
+      if (effectiveLog) {
+        await writeLog(engineConfig.logsPath, { opts, message, sendResult: result, configEmail: opts.configEmail, emailList: effectiveListName });
+      }
     } else {
       logError(`Failed to send: ${result.error?.message}`);
       process.exit(1);
@@ -294,6 +304,10 @@ export async function run(argv?: string[]): Promise<void> {
     console.log();
     success(`Bulk send complete: ${result.successful}/${result.total} sent, ${result.failed} failed.`);
 
+    if (effectiveLog) {
+      await writeLog(engineConfig.logsPath, { opts, bulkResult: result, configEmail: opts.configEmail, emailList: effectiveListName });
+    }
+
     if (result.failed > 0) {
       process.exit(1);
     }
@@ -322,6 +336,9 @@ export async function run(argv?: string[]): Promise<void> {
 
   if (result.success) {
     success(`Email sent to ${result.recipient} (${result.messageId})`);
+    if (effectiveLog) {
+      await writeLog(engineConfig.logsPath, { opts, message, sendResult: result, configEmail: opts.configEmail, emailList: effectiveListName });
+    }
   } else {
     logError(`Failed to send: ${result.error?.message}`);
     process.exit(1);

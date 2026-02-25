@@ -40,3 +40,6 @@ Thumbs.db
 lists/*
 __sendEmail__*
 config/*
+
+# log files
+logs/

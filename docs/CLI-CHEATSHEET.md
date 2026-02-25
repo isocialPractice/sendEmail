@@ -28,6 +28,10 @@ sendEmail --config-email newsletter --email-list subscribers --force
 # Send one email to all contacts on a list
 sendEmail --config-email billing --email-list clients --send-all --force
 
+# Send with logging enabled
+sendEmail --config-email billing --email-list clients --log --force
+# Writes: logs/1.log, logs/2.log, ... (sequential)
+
 # Send with attachment
 sendEmail --send-to john@example.com --subject "Report" \
   --message-html ./body.html \
@@ -85,6 +89,7 @@ sendEmail --test
 | `--attach-content-disp <v...>` | | mixed | `inline` or `attachment` |
 | `--email-list <name>` | | repetitive | Bulk list from `lists/` |
 | `--send-all` | | configurable | Send one email to all list contacts |
+| `--log` | | boolean | Log sent email to `logs/<n>.log` |
 | `--new-list <name>` | | aggressive | Create list from tool files |
 | `--list-tool-path <path>` | | passive | Path to tool files |
 

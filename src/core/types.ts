@@ -56,6 +56,7 @@ export interface EmailConfig {
   sendAll?: boolean;         // Send one email to all contacts on the list at once
   emailList?: string;        // List file name from lists/ (e.g., "billing")
   'email-list'?: EmailContact[];  // Inline contact list embedded in email.json
+  log?: boolean | string;    // Log sent email to logs/ (true | "true" | false)
 }
 
 /**
@@ -140,6 +141,7 @@ export interface CLIOptions {
   // List Options
   emailList?: string;            // --email-list [listName] (triggers repetitive mode)
   sendAll?: boolean;             // --send-all (send one email to all contacts on the list)
+  log?: boolean;                 // --log (log sent email to logs/<n>.log)
 
   // Tool Options
   newList?: string;              // --new-list [listName]
@@ -172,6 +174,7 @@ export interface EngineConfig {
   listsPath: string;            // Path to lists/
   attachmentsPath: string;      // Path to attachments/
   imagesPath: string;           // Path to img/
+  logsPath: string;             // Path to logs/
   defaultAccount: string;       // Default account name (default: '_default')
 }
 
@@ -206,6 +209,7 @@ export type OptionType =
   | 'null'               // Toggles default behavior on/off
   | 'null:reproductive'  // Produces reusable instances (e.g., --copy, --test)
   | 'null:productive'    // Documentation/maintenance (e.g., --help)
+  | 'boolean'            // Boolean flag, configurable (e.g., --log, --send-all)
   | 'aggressive'         // Tool mode, disables sending
   | 'passive';           // Requires an aggressive option to activate
 
@@ -229,4 +233,125 @@ export interface CLIAttachment {
   path?: string;
   cid?: string;
   contentDisposition?: 'attachment' | 'inline';
+}
+
+// ─── Configuration Type System ────────────────────────────────────────────────
+
+/**
+ * Configuration category — top-level grouping of sendEmail config files.
+ * Used to distinguish which config/ subdirectory an item belongs to.
+ */
+export type ConfigCategory = 'accounts' | 'globals' | 'emails';
+
+/**
+ * Account configuration item types.
+ * Parent category: `accounts`
+ *
+ * - `account`          → any config/accounts/*.js file
+ * - `account:default`  → config/accounts/_default.js
+ * - `account:named`    → config/accounts/<fileName>.js (not _default)
+ */
+export type AccountConfigType =
+  | 'account'
+  | 'account:default'
+  | 'account:named';
+
+/**
+ * Global configuration item types.
+ * Parent category: `globals`
+ *
+ * - `global`                    → config/globals/<folderName>/  (the folder itself)
+ * - `global:nested`             → config/globals/<folderName>/<nestItem> (unrecognized nested item)
+ * - `global:configuration`      → config/globals/<folderName>/global.js
+ * - `global:data:html`          → config/globals/<folderName>/html.htm[l]  (root-level HTML data file)
+ * - `global:data:text`          → config/globals/<folderName>/text.txt     (root-level text data file)
+ * - `global:data:folder`        → config/globals/<folderName>/html/ or data/ subfolder
+ * - `global:data:folder:html`   → config/globals/<folderName>/html/ subfolder
+ * - `global:data:folder:data`   → config/globals/<folderName>/data/ subfolder
+ */
+export type GlobalConfigType =
+  | 'global'
+  | 'global:nested'
+  | 'global:configuration'
+  | 'global:data:html'
+  | 'global:data:text'
+  | 'global:data:folder'
+  | 'global:data:folder:html'
+  | 'global:data:folder:data';
+
+/**
+ * Email configuration item types.
+ * Parent category: `emails`
+ *
+ * - `email`                      → config/emails/<folderName>/  (the folder itself)
+ * - `email:nested`               → config/emails/<folderName>/<nestItem> (unrecognized nested item)
+ * - `email:configuration:js`     → config/emails/<folderName>/email.js
+ * - `email:configuration:json`   → config/emails/<folderName>/email.json
+ * - `email:data:folder`          → config/emails/<folderName>/html/ or data/ subfolder (either)
+ * - `email:data:folder:html`     → config/emails/<folderName>/html/ subfolder
+ * - `email:data:folder:data`     → config/emails/<folderName>/data/ subfolder
+ * - `email:data:html`            → config/emails/<folderName>/html/<file.ext>  (primary type)
+ * - `email:data:text`            → config/emails/<folderName>/data/<file.ext>  (primary type)
+ * - `email:message:file:html`    → config/emails/<folderName>/html/<file.ext>  (sub-type: message html file)
+ * - `email:message:file:text`    → config/emails/<folderName>/data/<file.ext>  (sub-type: message text file)
+ */
+export type EmailConfigType =
+  | 'email'
+  | 'email:nested'
+  | 'email:configuration:js'
+  | 'email:configuration:json'
+  | 'email:data:folder'
+  | 'email:data:folder:html'
+  | 'email:data:folder:data'
+  | 'email:data:html'
+  | 'email:data:text'
+  | 'email:message:file:html'
+  | 'email:message:file:text';
+
+/**
+ * Union of all configuration item types across all categories.
+ */
+export type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType;
+
+/**
+ * Fully resolved structure of a global folder.
+ * Returned by `ConfigLoader.resolveGlobalFolder()`.
+ *
+ * A global folder (`config/globals/<folderName>/`) may contain:
+ *   - `global.js`       — required configuration + attachments
+ *   - `html.htm[l]`     — optional HTML data file (root-level, strict naming)
+ *   - `text.txt`        — optional text data file (root-level, strict naming)
+ *   - `html/<file>`     — optional HTML data file inside html/ subfolder (relaxed naming)
+ *   - `data/<file>`     — optional text data file inside data/ subfolder (relaxed naming)
+ *
+ * Nested global folders are supported via slash-separated names, e.g. `'footer/billing'`
+ * resolves to `config/globals/footer/billing/`.
+ *
+ * Resolution order (mirrors --global-config default switch):
+ *   1. CWD/config/globals/<name>/   (--copy instance)
+ *   2. ROOT/config/globals/<name>/  (sendEmail root)
+ *   3. CWD/<name>/                  (CWD directory fallback)
+ */
+export interface GlobalDataResolution {
+  /** The global name used to look it up, e.g. 'footer' or 'footer/billing' */
+  name: string;
+  /** Absolute path to the resolved global folder */
+  folderPath: string;
+  /**
+   * Base path for resolving attachment paths declared in global.js.
+   * Corresponds to the root directory from which the global was found:
+   *   - CWD   when found in CWD/config/globals/ or CWD/<name>/
+   *   - rootPath when found in ROOT/config/globals/
+   */
+  assetBasePath: string;
+  /** Absolute path to global.js, if present */
+  configFilePath?: string;
+  /** Absolute path to the resolved HTML data file, if present */
+  htmlDataPath?: string;
+  /** Absolute path to the resolved text data file, if present */
+  textDataPath?: string;
+  /** Type classification for where the HTML data was found */
+  htmlDataType?: 'global:data:html' | 'global:data:folder:html';
+  /** Type classification for where the text data was found */
+  textDataType?: 'global:data:text' | 'global:data:folder:data';
 }

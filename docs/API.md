@@ -65,6 +65,7 @@ interface EngineConfig {
   listsPath: string;       // lists/
   attachmentsPath: string; // attachments/
   imagesPath: string;      // img/
+  logsPath: string;        // logs/
   defaultAccount: string;  // '_default'
 }
 ```
@@ -112,11 +113,57 @@ const list = await engine.loadEmailList('subscribers');
 // { 'email-list': [{ email: '...', name: '...' }, ...] }
 ```
 
+#### `loadGlobalAttachmentsFromFile(configFilePath: string): Promise<Attachment[]>`
+
+Load global attachments from an explicit resolved file path. Path and asset resolution are the responsibility of the caller.
+
+```typescript
+const atts = await engine.loadGlobalAttachmentsFromFile('/absolute/path/to/global.js');
+```
+
+---
+
+#### `resolveGlobalFolder(globalName: string): Promise<GlobalDataResolution>`
+
+Resolve the full structure of a global folder. Supports nested paths (e.g. `'footer/billing'`).
+
+Returns a `GlobalDataResolution` describing the paths to `global.js`, HTML data file, and text data file.
+
+```typescript
+const resolution = await engine.resolveGlobalFolder('footer');
+// resolution.configFilePath  → path to global.js
+// resolution.htmlDataPath    → path to html.htm / html/<file>
+// resolution.textDataPath    → path to text.txt / data/<file>
+// resolution.htmlDataType    → 'global:data:html' | 'global:data:folder:html'
+// resolution.textDataType    → 'global:data:text' | 'global:data:folder:data'
+
+// Nested global:
+const nested = await engine.resolveGlobalFolder('footer/billing');
+```
+
+---
+
+#### `loadGlobalForInline(globalName: string): Promise<{ html?, text?, attachments, assetBasePath }>`
+
+Load a global's data content (HTML and/or text) and its attachment list. Follows the same 3-step resolution order as `--global-config` (CWD copy-location → root → CWD directory).
+
+Attachment paths are returned **raw** (not resolved). Use `AttachmentLoader.resolveAttachmentsFromBase(attachments, assetBasePath)` to resolve them from the correct root.
+
+```typescript
+const { html, text, attachments, assetBasePath } = await engine.loadGlobalForInline('footer');
+console.log(html);          // rendered HTML from html.htm or html/<file>
+console.log(text);          // text from text.txt or data/<file>
+console.log(attachments);   // raw attachment list from global.js
+console.log(assetBasePath); // root to resolve attachment paths from
+```
+
 ---
 
 #### `buildMessage(emailConfig, templateVars, overrides?): Promise<EmailMessage>`
 
 Build a complete, ready-to-send email message from configuration and template variables.
+
+**Global tag processing**: if the loaded HTML or text content contains `{% global 'name' %}` tags, `buildMessage()` automatically resolves each referenced global, substitutes the tag with the global's data file content, and merges the global's attachments. See [TEMPLATING.md](TEMPLATING.md) for full details.
 
 ```typescript
 const message = await engine.buildMessage(
@@ -227,8 +274,63 @@ interface EmailConfig {
   sendAll?: boolean;          // Send one email to all contacts on the list
   emailList?: string;         // List file name from lists/
   'email-list'?: EmailContact[]; // Inline contact list
+  log?: boolean | string;     // Log sent email to logs/ (true | "true" enables logging)
 }
 ```
+
+### `GlobalDataResolution`
+
+Returned by `resolveGlobalFolder()`. Describes all discovered files within a global folder.
+
+```typescript
+interface GlobalDataResolution {
+  name: string;              // The global name used for lookup, e.g. 'footer' or 'footer/billing'
+  folderPath: string;        // Absolute path to the global folder
+  /**
+   * Root directory used for resolving attachment paths from global.js.
+   * - CWD   when the global was found in a --copy instance (CWD/config/globals/) or CWD directory
+   * - rootPath when the global was found in the installed sendEmail root (ROOT/config/globals/)
+   */
+  assetBasePath: string;
+  configFilePath?: string;   // Absolute path to global.js, if present
+  htmlDataPath?: string;     // Absolute path to HTML data file, if present
+  textDataPath?: string;     // Absolute path to text data file, if present
+  htmlDataType?:             // Where the HTML data was found
+    | 'global:data:html'         // root-level html.htm[l]
+    | 'global:data:folder:html'; // html/ subfolder
+  textDataType?:             // Where the text data was found
+    | 'global:data:text'         // root-level text.txt
+    | 'global:data:folder:data'; // data/ subfolder
+}
+```
+
+---
+
+### Configuration Type System
+
+Every item in `config/` is classified by a `ConfigItemType`. Full reference in [TEMPLATING.md](TEMPLATING.md#config-type-system).
+
+```typescript
+type ConfigCategory = 'accounts' | 'globals' | 'emails';
+
+type AccountConfigType = 'account' | 'account:default' | 'account:named';
+
+type GlobalConfigType =
+  | 'global' | 'global:nested' | 'global:configuration'
+  | 'global:data:html' | 'global:data:text'
+  | 'global:data:folder' | 'global:data:folder:html' | 'global:data:folder:data';
+
+type EmailConfigType =
+  | 'email' | 'email:nested'
+  | 'email:configuration:js' | 'email:configuration:json'
+  | 'email:data:folder' | 'email:data:folder:html' | 'email:data:folder:data'
+  | 'email:data:html' | 'email:data:text'
+  | 'email:message:file:html' | 'email:message:file:text';
+
+type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType;
+```
+
+---
 
 ### `SendResult`
 

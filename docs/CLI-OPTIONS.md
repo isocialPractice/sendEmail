@@ -433,6 +433,41 @@ sendEmail --config-email billing --email-list clients --send-all --force
 
 ---
 
+### `--log`
+
+**Type:** `boolean`  
+**Configurable:** yes
+
+Log each sent email to a sequentially numbered file in the `logs/` folder at the sendEmail root:
+
+```
+logs/1.log
+logs/2.log
+logs/3.log
+...
+```
+
+The next log number is determined by scanning for the highest existing `N.log` file and incrementing by 1. The `logs/` directory is created automatically if it does not exist.
+
+```bash
+sendEmail --config-email billing --email-list clients --log
+sendEmail --config-email billing --email-list clients --log --force
+```
+
+Each log file captures:
+- Log number and timestamp
+- From, To, CC, BCC, Reply-To, Subject
+- `--config-email` and `--email-list` used
+- Account used
+- Send result (success/failure, Message-ID)
+- Bulk summary (total/sent/failed + per-recipient results) for repetitive mode
+- Attachment list (filename, path, content disposition, CID)
+- All active CLI options
+
+Can also be configured in `email.json` with `"log": true` (boolean) or `"log": "true"` (string).
+
+---
+
 ## Tool Options
 
 Tool options disable email sending. They are used for list management and maintenance.

@@ -283,7 +283,61 @@ sendEmail --config-email billing --email-list clients
 sendEmail --config-email billing --email-list clients --force
 ```
 
-### Example 18: Copy Tool to a Project
+### Example 18a: Inline Global Templates
+
+Use `{% global 'name' %}` inside any HTML email template to embed a reusable block (footer, signature, etc.). The global's attachments (inline images, logos) are automatically included.
+
+**`config/globals/footer/global.js`**:
+```javascript
+export const globalAttachments = [
+  { filename: 'logo.png', path: 'img/logo.png', contentDisposition: 'inline', cid: 'logo@myco.com' },
+];
+```
+
+**`config/globals/footer/html.htm`**:
+```html
+<div>
+  <p>Best regards, The Team</p>
+  <img src="cid:logo@myco.com" alt="Logo" />
+</div>
+```
+
+**`config/emails/newsletter/html/body.htm`**:
+```html
+<p>Hello {{contact.name}},</p>
+<p>Here is your monthly update.</p>
+
+{% global 'footer' %}
+```
+
+When sent, `{% global 'footer' %}` is replaced by the footer HTML and the logo attachment is merged automatically.
+
+### Example 18b: Nested Global Folders
+
+For different footers per email category, use nested globals:
+
+```
+config/globals/
+  footer/
+    billing/
+      global.js
+      html.htm           ← billing-specific footer
+    marketing/
+      global.js
+      html/
+        footer.htm       ← marketing footer (subfolder, relaxed naming)
+    global.js            ← shared base footer
+    html.htm
+```
+
+Reference nested globals by path:
+
+```html
+{% global 'footer/billing' %}
+{% global 'footer/marketing' %}
+```
+
+### Example 18c: Copy sendEmail to a Project
 
 ```bash
 # Copy sendEmail to a new project directory

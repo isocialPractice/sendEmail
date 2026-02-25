@@ -56,7 +56,8 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
 
   program
     .option('--email-list <listName>', 'Email list for bulk sending (triggers repetitive mode) [repetitive]')
-    .option('--send-all', 'Send one email to all contacts on the list [configurable]');
+    .option('--send-all', 'Send one email to all contacts on the list [configurable]')
+    .option('--log', 'Log sent email to logs/<n>.log (sequential) [boolean]');
 
   // ── Tool Options ──────────────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     attachContentDisp: opts['attachContentDisp'] as string[] | undefined,
     emailList: opts['emailList'] as string | undefined,
     sendAll: opts['sendAll'] as boolean | undefined,
+    log: opts['log'] as boolean | undefined,
     newList: opts['newList'] as string | undefined,
     listToolPath: opts['listToolPath'] as string | undefined,
     force: opts['force'] as boolean | undefined,

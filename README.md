@@ -152,7 +152,8 @@ sendEmail/
 │   │   ├── billing/
 │   │   └── example/
 │   └── globals/               # Reusable global templates
-│       ├── footer/
+│       ├── footer/            # Global: 'footer'
+│       │   └── billing/       # Nested global: 'footer/billing'
 │       └── example/
 ├── lists/                     # Email lists (.json)
 ├── attachments/               # Email attachments
@@ -232,6 +233,54 @@ Legacy placeholders (`CH-EMAILONLIST`, `CHANGE_SEND_TO`) are also supported.
 
 ---
 
+## Global Templates
+
+Reusable HTML/text snippets and attachments, stored in `config/globals/<name>/`.
+
+### Inline Global Tags
+
+Embed a global template inside any email HTML or text file:
+
+```html
+{% global 'footer' %}
+```
+
+When `buildMessage()` processes the template, the tag is replaced with the global's HTML (or text) content, and the global's attachments (from `global.js`) are automatically merged into the email.
+
+### Nested Globals
+
+Global folders can contain nested sub-globals:
+
+```
+config/globals/
+  footer/
+    billing/
+      global.js          ← 'footer/billing'
+      html.htm           ← optional HTML data
+    global.js            ← 'footer'
+    html.htm             ← optional HTML data
+```
+
+Reference a nested global:
+
+```html
+{% global 'footer/billing' %}
+```
+
+### Global Folder Structure
+
+| File | Description |
+| ---- | ----------- |
+| `global.js` | Required — declares `globalAttachments` array |
+| `html.htm` or `html.html` | Optional — HTML content (root, strict naming) |
+| `text.txt` | Optional — text content (root, strict naming) |
+| `html/<anyFile>` | Optional — HTML content (subfolder, relaxed naming) |
+| `data/<anyFile>` | Optional — text content (subfolder, relaxed naming) |
+
+See [docs/TEMPLATING.md](docs/TEMPLATING.md) for the full templating reference.
+
+---
+
 ## Using as a Library
 
 ```typescript
@@ -271,3 +320,4 @@ See [docs/API.md](docs/API.md) for full API documentation.
 - [CLI-CHEATSHEET.md](docs/CLI-CHEATSHEET.md) — Quick reference
 - [API.md](docs/API.md) — Engine API for developers
 - [EXAMPLES.md](docs/EXAMPLES.md) — Real-world usage examples
+- [TEMPLATING.md](docs/TEMPLATING.md) — Template variables, global tags, and config type system

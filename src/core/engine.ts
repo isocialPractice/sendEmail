@@ -15,7 +15,7 @@ import { validateEmailMessage } from './validator.js';
 import { readFile } from '../utils/file-utils.js';
 import { markdownToHtml } from '../utils/markdown-html.js';
 import { getContentType } from '../utils/file-utils.js';
-import { debug, info } from '../utils/logger.js';
+import { debug, info, warn } from '../utils/logger.js';
 import { ConfigurationError, NetworkError } from '../utils/error-handler.js';
 import type {
   EngineConfig,
@@ -27,6 +27,7 @@ import type {
   SendResult,
   BulkSendResult,
   AccountConfig,
+  GlobalDataResolution,
 } from './types.js';
 
 /**
@@ -42,6 +43,7 @@ export function createEngineConfig(rootPath: string): EngineConfig {
     listsPath: path.resolve(rootPath, 'lists'),
     attachmentsPath: path.resolve(rootPath, 'attachments'),
     imagesPath: path.resolve(rootPath, 'img'),
+    logsPath: path.resolve(rootPath, 'logs'),
     defaultAccount: '_default',
   };
 }
@@ -115,6 +117,30 @@ export class EmailEngine {
   }
 
   /**
+   * Resolve the structure of a global folder by name.
+   * Supports nested paths, e.g. 'footer/billing'.
+   * Returns paths for global.js, HTML data file, and text data file.
+   */
+  async resolveGlobalFolder(globalName: string): Promise<GlobalDataResolution> {
+    return this.configLoader.resolveGlobalFolder(globalName);
+  }
+
+  /**
+   * Load a global's inline content (HTML/text) and attachments.
+   * Used for {% global 'name' %} tag resolution outside of buildMessage().
+   * Returns raw (unresolved) attachment paths alongside assetBasePath so the
+   * caller can resolve paths with AttachmentLoader.resolveAttachmentsFromBase().
+   */
+  async loadGlobalForInline(globalName: string): Promise<{
+    html?: string;
+    text?: string;
+    attachments: Attachment[];
+    assetBasePath: string;
+  }> {
+    return this.configLoader.loadGlobalForInline(globalName);
+  }
+
+  /**
    * Build a complete nodemailer-ready EmailMessage from config and template variables.
    */
   async buildMessage(
@@ -178,7 +204,66 @@ export class EmailEngine {
       // caller should provide pre-loaded attachments via overrides
     }
 
-    // Load and merge global attachments
+    // ── Process {% global 'name' %} inline tags ───────────────────────────────
+    // Scan HTML (and text) content for {% global '...' %} tags, resolve each
+    // referenced global's data file and attachments, then substitute in-place.
+    let inlineGlobalAtts: Attachment[] = [];
+
+    const tagsInHtml = html ? this.templateEngine.extractGlobalTags(html) : [];
+    const tagsInText = text ? this.templateEngine.extractGlobalTags(text) : [];
+    const allInlineTags = [...new Set([...tagsInHtml, ...tagsInText])];
+
+    // Load all referenced globals once and cache
+    const globalDataCache = new Map<string, { html?: string; text?: string; attachments: Attachment[]; assetBasePath: string }>();
+    for (const tagName of allInlineTags) {
+      try {
+        const globalData = await this.configLoader.loadGlobalForInline(tagName);
+        globalDataCache.set(tagName, globalData);
+
+        if (globalData.attachments.length > 0) {
+          // Resolve attachment paths relative to the base path where the global was found
+          // (CWD for --copy instances and CWD directory fallback; rootPath for installed root)
+          const resolved = this.attachmentLoader.resolveAttachmentsFromBase(
+            globalData.attachments,
+            globalData.assetBasePath
+          );
+          inlineGlobalAtts = [...inlineGlobalAtts, ...resolved];
+        }
+
+        debug(`Processed inline global '${tagName}' (html=${!!globalData.html}, text=${!!globalData.text}, attachments=${globalData.attachments.length}, base=${globalData.assetBasePath})`);
+      } catch (err) {
+        const error = err as Error;
+        warn(`Global tag '{% global '${tagName}' %}' could not be resolved: ${error.message} — tag will be removed from output`);
+        globalDataCache.set(tagName, { attachments: [], assetBasePath: this.config.rootPath });
+      }
+    }
+
+    // Build substitution maps: html prefers html content; text prefers text content
+    const htmlGlobalMap = new Map<string, string>();
+    const textGlobalMap = new Map<string, string>();
+    for (const [name, data] of globalDataCache) {
+      htmlGlobalMap.set(name, data.html ?? data.text ?? '');
+      textGlobalMap.set(name, data.text ?? data.html ?? '');
+    }
+
+    // Substitute tags in HTML
+    if (html && tagsInHtml.length > 0) {
+      html = this.templateEngine.processGlobalTags(html, htmlGlobalMap);
+    }
+
+    // Substitute tags in text
+    if (text && tagsInText.length > 0) {
+      text = this.templateEngine.processGlobalTags(text, textGlobalMap);
+    }
+
+    // Merge inline global attachments
+    if (inlineGlobalAtts.length > 0) {
+      attachments = [...attachments, ...inlineGlobalAtts];
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+
+    // Load and merge global attachments (from emailConfig.globals — --global-config style)
     if (emailConfig.globals) {
       for (const globalName of emailConfig.globals) {
         const globalAtts = await this.configLoader.loadGlobalAttachments(globalName);

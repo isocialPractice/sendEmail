@@ -4,15 +4,15 @@
 
 export const globalAttachments = [
   {
-    filename: 'CH-IMG_1',
-    path: 'img/CH-IMG-1',
+    filename: 'logo',
+    path: 'img/logo.jpg',
     contentDisposition: 'inline',
-    cid: 'img1@global.local',
+    cid: 'logo@example.com',
   },
   {
-    filename: 'CH-IMG_2',
-    path: 'img/CH-IMG-2',
+    filename: 'map',
+    path: 'img/map.jpg',
     contentDisposition: 'inline',
-    cid: 'img2@global.local',
+    cid: 'map@example.com',
   },
 ];

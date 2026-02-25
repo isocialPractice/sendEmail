@@ -42,6 +42,7 @@ const OPTIONS: OptionEntry[] = [
   { flag: '--attach-content-disp <value...>', description: 'Content disposition(s): inline or attachment (default: attachment)', type: 'mixed', configurable: true },
   { flag: '--email-list <listName>', description: 'Email list for bulk sending (from lists/<listName>.json)', type: 'repetitive', configurable: true },
   { flag: '--send-all', description: 'Send one email to all contacts on the list (requires --email-list or emailList/email-list in email.json)', type: 'configurable', configurable: true },
+  { flag: '--log', description: 'Log sent email as logs/<n>.log (sequential numbered file in logs/ folder). Configurable: set "log": true in email.json', type: 'boolean', configurable: true },
   // Tool options
   { flag: '--new-list <listName>', description: 'Create a new email list from tool files __sendEmail__<name>-emails.txt and __sendEmail__<name>-names.txt', type: 'aggressive', configurable: false, isTool: true },
   { flag: '--list-tool-path <path>', description: 'Path to tool files for --new-list (default: CWD)', type: 'passive', configurable: false, isTool: true },

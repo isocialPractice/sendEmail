@@ -26,6 +26,13 @@ export class TemplateEngine {
   private readonly NEW_STYLE = /\{\{([^}]+)\}\}/g;
 
   /**
+   * Matches {% global 'name' %} tags in HTML content.
+   * Supports plain names ('footer') and nested paths ('footer/billing').
+   * Single or double quotes are both accepted.
+   */
+  private readonly GLOBAL_TAG = /\{%\s*global\s+['"]([^'"]+)['"]\s*%\}/g;
+
+  /**
    * Substitute template variables in a string.
    * Processes both {{new.style}} and legacy CH-* placeholders.
    */
@@ -116,5 +123,41 @@ export class TemplateEngine {
       'date.short': now.toLocaleDateString('en-US'),
       ...extra,
     };
+  }
+
+  /**
+   * Extract all unique global names referenced by {% global 'name' %} tags.
+   * Returns deduplicated list in order of first appearance.
+   */
+  extractGlobalTags(template: string): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    const regex = new RegExp(this.GLOBAL_TAG.source, 'g');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(template)) !== null) {
+      const name = match[1].trim();
+      if (!seen.has(name)) {
+        seen.add(name);
+        result.push(name);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Replace {% global 'name' %} tags in an HTML string with resolved content.
+   *
+   * @param template        The HTML string containing global tags
+   * @param globalContentMap  Map of global name → replacement HTML string
+   * @returns The HTML string with all resolved global tags substituted
+   *
+   * If a global name is not found in the map, the tag is replaced with an
+   * empty string and a warning is expected to have been issued by the caller.
+   */
+  processGlobalTags(template: string, globalContentMap: Map<string, string>): string {
+    return template.replace(
+      new RegExp(this.GLOBAL_TAG.source, 'g'),
+      (_match, name: string) => globalContentMap.get(name.trim()) ?? ''
+    );
   }
 }
