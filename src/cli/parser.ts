@@ -28,6 +28,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('--config-email <name>', 'Use a configured email from config/emails/ [normal|repetitive]')
     .option('-c, --copy [path]', 'Copy the sendEmail tool to a path (or CWD if no path) [null:reproductive <tools>]')
     .option('--copy-config [path]', 'Copy only config/support types to a path (or CWD if no path) [null:reproductive <config>]')
+    .option('--copy-config-no-account [path]', 'Copy only config/support types without account setup [null:reproductive <config:no-account>]')
     .option('--copy-tool [path]', 'Copy the full sendEmail tool to a path (or CWD if no path) [null:reproductive <tools>]')
     .option('-h, --help [section]', 'Display help documentation; optionally specify a section [null:productive]')
     .option('-f, --force', 'Skip the confirmation prompt before sending [null]')
@@ -40,7 +41,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('--send-to <address...>', 'Recipient address(es) [mixed]')
     .option('--subject <text>', 'Email subject [mixed]')
     .option('--message-file <path>', 'Message file (.txt, .html, .htm, .md) [mixed]')
-    .option('--message-html <path>', 'HTML message file (explicit) [mixed]')
+    .option('--message-html [path]', 'HTML message file; omit arg to use default html.htm[l] from email config [mixed]')
     .option('--message-text <path>', 'Plain text message file (explicit) [mixed]')
     .option('--from-address <email>', 'From address (overrides account setting) [mixed]')
     .option('--reply-to <email...>', 'Reply-to address(es) [mixed]')
@@ -92,7 +93,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     sendTo: opts['sendTo'] as string[] | undefined,
     subject: opts['subject'] as string | undefined,
     messageFile: opts['messageFile'] as string | undefined,
-    messageHtml: opts['messageHtml'] as string | undefined,
+    messageHtml: opts['messageHtml'] as string | true | undefined,
     messageText: opts['messageText'] as string | undefined,
     fromAddress: opts['fromAddress'] as string | undefined,
     replyTo: opts['replyTo'] as string[] | undefined,
@@ -110,6 +111,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     force: opts['force'] as boolean | undefined,
     copy: opts['copy'] as string | undefined,
     copyConfig: opts['copyConfig'] as string | undefined,
+    copyConfigNoAccount: opts['copyConfigNoAccount'] as string | undefined,
     copyTool: opts['copyTool'] as string | undefined,
     help: opts['help'] as string | undefined,
     test: opts['test'] as string | undefined,
@@ -141,7 +143,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
  */
 function determineSendMode(opts: CLIOptions): SendMode {
   // Tool modes (no sending)
-  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined) return SendMode.RAW; // tool mode, handled before send
+  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined || opts.copyConfigNoAccount !== undefined) return SendMode.RAW; // tool mode, handled before send
   if (opts.newList !== undefined) return SendMode.RAW; // tool mode
   if (opts.test !== undefined) return SendMode.RAW; // tool mode
 
@@ -163,18 +165,21 @@ function determineSendMode(opts: CLIOptions): SendMode {
 /**
  * Normalize argv to convert colon-syntax options to kebab-case
  * before passing to Commander, which does not support colons in option names.
- *   --global-config:root   →  --global-config-root
- *   --global-config:path   →  --global-config-path
- *   -c:config              →  --copy-config
- *   --copy:config          →  --copy-config
- *   -c:tool                →  --copy-tool
- *   --copy:tool            →  --copy-tool
+ *   --global-config:root         →  --global-config-root
+ *   --global-config:path         →  --global-config-path
+ *   -c:config                    →  --copy-config
+ *   --copy:config                →  --copy-config
+ *   -c:config-no-account         →  --copy-config-no-account
+ *   --copy:config-no-account     →  --copy-config-no-account
+ *   -c:tool                      →  --copy-tool
+ *   --copy:tool                  →  --copy-tool
  */
 function normalizeArgv(argv: string[]): string[] {
   return argv.map(arg => {
     if (arg === '--global-config:root') return '--global-config-root';
     if (arg === '--global-config:path') return '--global-config-path';
     if (arg === '-c:config' || arg === '--copy:config') return '--copy-config';
+    if (arg === '-c:config-no-account' || arg === '--copy:config-no-account') return '--copy-config-no-account';
     if (arg === '-c:tool' || arg === '--copy:tool') return '--copy-tool';
     return arg;
   });

@@ -111,6 +111,37 @@ sendEmail \
   --account premium-account
 ```
 
+### Example 8a: Select HTML from a Config Array
+
+When `email.json` has `"html"` as an array (e.g. `["html_a", "html_b"]`), use `--message-html` to choose which file to send.
+
+**`config/emails/example/email.json`:**
+```json
+{
+  "to": "CHANGE_SEND_TO",
+  "subject": "Your Request",
+  "html": ["html_a", "html_b"]
+}
+```
+
+```bash
+# Use the default html.htm[l] in the email's html/ folder (flag only — no argument)
+sendEmail --config-email example --send-to client@example.com --message-html
+
+# Select by 0-based index (resolves html_a)
+sendEmail --config-email example --send-to client@example.com --message-html 0
+
+# Select by filename (resolves html_b)
+sendEmail --config-email example --send-to client@example.com --message-html html_b
+
+# Override entirely with a CWD-relative path (any "html" type)
+sendEmail --config-email example --send-to client@example.com --message-html ./custom/override.htm
+```
+
+> **Default file:** If `--message-html` is omitted (or passed as a flag) and `"html"` is an array,
+> the engine looks for `html.htm` or `html.html` in the email's `html/` folder. This file does not
+> need to appear in the array.
+
 ### Example 9: Use a Specific Account
 
 ```bash
@@ -350,6 +381,31 @@ cp config/accounts/example.js config/accounts/_default.js
 npm install
 npm run build
 ```
+
+### Example 18d: Copy Config Without Account Setup
+
+Use `--copy:config-no-account` when the destination project will always use the
+sendEmail root account credentials (no local `_default.js` needed):
+
+```bash
+# Copy config/support types only — no config/accounts/ created
+sendEmail --copy:config-no-account ~/projects/my-project/sendEmail
+
+# Use the config copy from a parent directory — account falls back to root _default.js
+cd ~/projects/my-project
+sendEmail --config-email billing --send-to client@example.com
+```
+
+**Account resolution with `--copy:config-no-account`:**
+
+| Scenario | Account used |
+|----------|-------------|
+| Local copy has no `config/accounts/` | sendEmail root `_default.js` (fallback) |
+| Local copy has `config/accounts/` with valid `_default.js` | Local copy's `_default.js` |
+| Local copy has `config/accounts/` but file has an error | Custom error with context — check credentials or remove the folder |
+
+Compare with `--copy:config` (the default, with account setup), which runs the OS setup script
+to create a template `config/accounts/_default.js` at the destination.
 
 ---
 

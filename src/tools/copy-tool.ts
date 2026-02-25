@@ -21,6 +21,13 @@
  * Copies only config/support types (config/emails, config/globals, attachments/, img/).
  * Copies .github/scripts/ temporarily, runs the OS-appropriate setup script to create
  * config/accounts/_default.js, then removes .github/ from the destination.
+ *
+ * ```bash
+ * sendEmail --copy:config-no-account /path/to/destination
+ * ```
+ * Copies only config/support types (config/emails, config/globals, attachments/, img/).
+ * Does NOT run setup — no config/accounts/ or _default.js is created.
+ * Account resolution falls back to the sendEmail root default when used with --config-email.
  */
 
 import path from 'path';
@@ -61,8 +68,9 @@ export class CopyTool {
    * @param destPath   - Destination path to copy into.
    * @param mode       - 'tools' (default): copy full tool + run setup inline.
    *                     'config': copy config/support types, run OS setup script, remove .github/.
+   *                     'config-no-account': copy config/support types only, no setup, no accounts/.
    */
-  async copy(sourceRoot: string, destPath: string, mode: 'tools' | 'config' = 'tools'): Promise<void> {
+  async copy(sourceRoot: string, destPath: string, mode: 'tools' | 'config' | 'config-no-account' = 'tools'): Promise<void> {
     const resolvedDest = path.resolve(destPath);
 
     if (!(await exists(sourceRoot))) {
@@ -84,6 +92,8 @@ export class CopyTool {
 
     if (mode === 'config') {
       await this.copyConfig(sourceRoot, resolvedDest);
+    } else if (mode === 'config-no-account') {
+      await this.copyConfigNoAccount(sourceRoot, resolvedDest);
     } else {
       await this.copyTools(sourceRoot, resolvedDest);
     }
@@ -167,6 +177,35 @@ export class CopyTool {
     info(`This directory can be used as a local config override.`);
     info(`When sendEmail is invoked from a parent of this folder, these config`);
     info(`types will take precedence over the sendEmail root config.`);
+  }
+
+  /**
+   * Copy only config/support types without running account setup.
+   * Copies: config/emails/, config/globals/, attachments/, img/
+   * No config/accounts/ is created. When used with --config-email, account
+   * resolution falls back to the sendEmail root default automatically.
+   */
+  private async copyConfigNoAccount(sourceRoot: string, resolvedDest: string): Promise<void> {
+    info(`Copying sendEmail config/support types to: ${resolvedDest} (no account setup)`);
+
+    const configDirs: Array<[string, string]> = [
+      [path.join(sourceRoot, 'config', 'emails'),   path.join(resolvedDest, 'config', 'emails')],
+      [path.join(sourceRoot, 'config', 'globals'),  path.join(resolvedDest, 'config', 'globals')],
+      [path.join(sourceRoot, 'attachments'),        path.join(resolvedDest, 'attachments')],
+      [path.join(sourceRoot, 'img'),                path.join(resolvedDest, 'img')],
+    ];
+
+    for (const [src, dest] of configDirs) {
+      if (await exists(src)) {
+        await copyDir(src, dest);
+      }
+    }
+
+    success(`Config/support types copied to: ${resolvedDest}`);
+    info(`This directory can be used as a local config override.`);
+    info(`When sendEmail is invoked from a parent of this folder, these config`);
+    info(`types will take precedence over the sendEmail root config.`);
+    info(`Account: no config/accounts/ created — sendEmail root default account will be used.`);
   }
 
   /**

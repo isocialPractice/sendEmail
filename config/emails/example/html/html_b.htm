@@ -1,27 +1,15 @@
 <p>Hello CH-EMAILONLIST,</p>
+
 <p style='margin-top:1px'>
  I received your request for a document. <br>
  Below is a summary:
 </p>
-()=> Can also use either sendEmail/config/emails/<emailName>/data/<fileName>.<ext> |
-()=> Raw string data input by user like other data in this file.
-()=> EXAMPLE USING - ../data/text_b.json
-()=> ```html
-<dl>
- ()=> allow custom syntax for this tool:
- ()=> Below should be how the, if not exactly how the syntax would work
- <!--## 
-  data = text_b.json
-  html = <dt>data.property[i]</dt>
-  html = <dt>data.value[i]</dt> 
- ##-->
- ()=> using the actual file the syntax above would parse html like below.
-  <dt>Total Sales</dt>
-  <dd>$20,000</dd>
-  <dt>Next Quarter Projected Sales</dt>
-  <dd>$22,000</dd>
-</dl>
-()=>```
+
+{% data text_b.json %}
+{%
+  <dt>data.property[i]</dt>
+  <dd>data.value[i]</dd>
+%}
 
 <br>
 
@@ -63,12 +51,6 @@
   1010 ST-0<br>
   Out of Town, ST 12345<br>
  </span><br>
-
-<!--
-----------------------------------------------------------------------
-  Put in a tag or embed if linkable map location (i.e. Google map).
-----------------------------------------------------------------------
--->
  <img alt="map"
   style="width: 225px; height: 226px"
   src='cid:map@example.com'/>

@@ -10,14 +10,23 @@ Quick reference for the `sendEmail` command-line tool.
 # Quick text email (raw mode)
 sendEmail -t someone@example.com "Your message here"
 
-# Send HTML file
+# Send HTML file (no config-email — direct path)
 sendEmail --send-to john@example.com --subject "Hello" --message-html ./email.html
 
 # Send with Markdown (auto-converted to HTML)
 sendEmail --send-to jane@example.com --subject "Update" --message-file ./update.md
 
-# Use a configured email template
+# Use a configured email template (html auto-resolved from email.json "html" string)
 sendEmail --config-email billing --send-to client@example.com
+
+# Use configured email where "html" is an array — select default html.htm[l]
+sendEmail --config-email example --message-html
+
+# Use configured email where "html" is an array — select by index
+sendEmail --config-email example --message-html 1
+
+# Use configured email where "html" is an array — select by filename
+sendEmail --config-email example --message-html html_b
 
 # Use a specific account
 sendEmail --account myaccount --send-to someone@example.com --subject "Test"
@@ -58,6 +67,10 @@ sendEmail --copy ./my-project
 sendEmail --copy:config ./my-project
 # Copies: config/emails/, config/globals/, attachments/, img/
 
+# Copy only config/support types without account setup (uses root account)
+sendEmail --copy:config-no-account ./my-project
+# Copies: config/emails/, config/globals/, attachments/, img/ (no config/accounts/ created)
+
 # Explicit full tool copy
 sendEmail --copy:tool ./my-project
 
@@ -77,7 +90,8 @@ sendEmail --test
 | `--account <name>` | | mixed | Account from `config/accounts/` |
 | `--config-email <name>` | | normal/rep | Template from `config/emails/` |
 | `--copy [path]` | `-c` | null:rep `<tools>` | Copy full tool to path (runs setup) |
-| `--copy:config [path]` | `-c:config` | null:rep `<config>` | Copy config/support types only |
+| `--copy:config [path]` | `-c:config` | null:rep `<config>` | Copy config/support types only (with account setup) |
+| `--copy:config-no-account [path]` | `-c:config-no-account` | null:rep `<config:no-account>` | Copy config/support types only (no account setup, uses root account) |
 | `--copy:tool [path]` | `-c:tool` | null:rep `<tools>` | Explicit full tool copy |
 | `--help [section]` | `-h` | null:prod | Show help |
 | `--force` | `-f` | null | Skip confirmation |
@@ -86,7 +100,7 @@ sendEmail --test
 | `--send-to <addr...>` | | mixed | Recipient(s) |
 | `--subject <text>` | | mixed | Email subject |
 | `--message-file <path>` | | mixed | Message file (.html/.txt/.md) |
-| `--message-html <path>` | | mixed | HTML message file |
+| `--message-html [path]` | | mixed | HTML file; optional arg selects from `"html"` array when using `--config-email` |
 | `--message-text <path>` | | mixed | Text message file |
 | `--from-address <email>` | | mixed | Override from address |
 | `--reply-to <email...>` | | mixed | Reply-to address(es) |

@@ -21,7 +21,7 @@ const OPTIONS: OptionEntry[] = [
   // Non-configurable
   { flag: '--account <name>', description: 'Specify a configured account from config/accounts/', type: 'mixed', configurable: false },
   { flag: '--config-email <name>', description: 'Use a configured email from config/emails/', type: 'normal | repetitive', configurable: false },
-  { flag: '-c, --copy [path]', description: 'Copy sendEmail to path (or CWD if no path given)', type: 'null:reproductive', configurable: false },
+  { flag: '-c, --copy [path]', description: 'Copy sendEmail to path (or CWD if no path given). Switch params: -c:tool (full copy), -c:config (config + account setup), -c:config-no-account (config only, no account setup)', type: 'null:reproductive', configurable: false },
   { flag: '-h, --help [section]', description: 'Show help. Sections: options, options:configurable, options:non-configurable, options:tool, arguments, arguments:configurable, arguments:non-configurable', type: 'null:productive', configurable: false },
   { flag: '-f, --force', description: 'Skip confirmation prompt before sending', type: 'null', configurable: false },
   { flag: '--test [unitTest]', description: 'Run all tests or a specific unit test by name', type: 'null:reproductive', configurable: false },
@@ -30,7 +30,7 @@ const OPTIONS: OptionEntry[] = [
   { flag: '--send-to <address...>', description: 'Recipient address(es)', type: 'mixed', configurable: true },
   { flag: '--subject <text>', description: 'Email subject line', type: 'mixed', configurable: true },
   { flag: '--message-file <path>', description: 'Message file (.txt, .html, .htm, .md). Extension determines type.', type: 'mixed', configurable: true },
-  { flag: '--message-html <path>', description: 'HTML message file (explicit)', type: 'mixed', configurable: true },
+  { flag: '--message-html [path]', description: 'HTML message file. Without --config-email: path resolved from CWD. With --config-email + array "html": omit/flag → default html.htm[l]; number → array index; name → array match; path with extension → CWD resolve.', type: 'mixed', configurable: true },
   { flag: '--message-text <path>', description: 'Plain text message file (explicit)', type: 'mixed', configurable: true },
   { flag: '--from-address <email>', description: 'From address (overrides account setting)', type: 'mixed', configurable: true },
   { flag: '--reply-to <email...>', description: 'Reply-to address(es)', type: 'mixed', configurable: true },

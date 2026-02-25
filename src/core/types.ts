@@ -125,7 +125,7 @@ export interface CLIOptions {
   sendTo?: string | string[];    // --send-to [address]
   subject?: string;              // --subject [text]
   messageFile?: string;          // --message-file [path]
-  messageHtml?: string;          // --message-html [path]
+  messageHtml?: string | true;   // --message-html [path] (true = flag-only, no argument)
   messageText?: string;          // --message-text [path]
   fromAddress?: string;          // --from-address [email]
   replyTo?: string | string[];   // --reply-to [email]
@@ -152,6 +152,7 @@ export interface CLIOptions {
   force?: boolean;               // -f, --force (skip confirmation)
   copy?: string;                 // -c, --copy [path] (copy tool, default tools mode)
   copyConfig?: string;           // -c:config, --copy:config [path] (copy config + support types only)
+  copyConfigNoAccount?: string;  // -c:config-no-account, --copy:config-no-account [path] (config copy, no account setup)
   copyTool?: string;             // -c:tool, --copy:tool [path] (explicit full tool copy)
   help?: string;                 // -h, --help [section] (show help)
   test?: string;                 // --test [unitTest] (run tests)
@@ -210,8 +211,9 @@ export type OptionType =
   | 'repetitive'                   // Triggers repetitive (bulk) send mode
   | 'null'                         // Toggles default behavior on/off
   | 'null:reproductive'            // Produces reusable instances (e.g., --test)
-  | 'null:reproductive <config>'   // Config-only copy (--copy:config)
-  | 'null:reproductive <tools>'    // Full tool copy (--copy / --copy:tool)
+  | 'null:reproductive <config>'          // Config-only copy (--copy:config)
+  | 'null:reproductive <config:no-account>' // Config-only copy, no account setup (--copy:config-no-account)
+  | 'null:reproductive <tools>'           // Full tool copy (--copy / --copy:tool)
   | 'null:productive'              // Documentation/maintenance (e.g., --help)
   | 'boolean'                      // Boolean flag, configurable (e.g., --log, --send-all)
   | 'aggressive'                   // Tool mode, disables sending

@@ -108,6 +108,33 @@ sendEmail -c:config /path/to/project
 > `sendEmail/config/emails/` folder (created via `--copy:config`), those config types
 > take precedence over the sendEmail root config.
 
+#### `-c:config-no-account [path]` / `--copy:config-no-account [path]`
+
+**Type:** `null:reproductive <config:no-account>`
+**Inverse (default):** `null:reproductive <config:account>` (i.e. `--copy:config`)
+
+Copy only configuration and support types **without** running account setup. No `config/accounts/`
+folder or `_default.js` is created at the destination.
+
+Copies:
+- `config/emails/` — email templates
+- `config/globals/` — global templates
+- `attachments/` — email attachments (`support <attachment>`)
+- `img/` — embedded images (`support <img>`)
+
+```bash
+sendEmail --copy:config-no-account ./my-project
+sendEmail -c:config-no-account /path/to/project
+```
+
+When `--config-email` is used from a directory that contains this config copy, account resolution
+falls back automatically to the sendEmail root `_default.js` (since no local `config/accounts/`
+exists). If the user later adds a `config/accounts/` folder to the copy, it will be used instead.
+
+> Use `--copy:config` (with account setup) if you want a pre-configured `_default.js` template
+> created at the destination. Use `--copy:config-no-account` when the destination project will
+> always rely on the sendEmail root account credentials.
+
 ---
 
 ### `-h, --help [section]`
@@ -228,18 +255,59 @@ sendEmail --message-file ./announcement.txt
 
 ---
 
-### `--message-html <path>`
+### `--message-html [path]`
 
 **Type:** `mixed`
 
-Explicitly set an HTML message file (regardless of extension).
+Set the HTML message file. The `[path]` argument is optional; exact behaviour depends on whether `--config-email` is in use and the type of the `"html"` property in `email.json`.
+
+#### Without `--config-email` — direct path
 
 ```bash
-sendEmail --message-html ./template.htm
+sendEmail --send-to john@example.com --subject "Hello" --message-html ./newsletter.html
 ```
 
-- Relative paths are resolved from your current working directory first (if the file exists there)
-- If not found in CWD, `sendEmail` falls back to the tool/config root path
+- Relative paths are resolved from CWD first, then the sendEmail root
+
+#### With `--config-email` — `"html"` is an array or object
+
+When `email.json` has `"html": ["html_a", "html_b"]` (array or object), `--message-html` selects one file from that catalog:
+
+```bash
+# Use the default html.htm[l] file in the email's html/ folder (flag only — no argument)
+sendEmail --config-email example --message-html
+
+# Select by 0-based index
+sendEmail --config-email example --message-html 1
+
+# Select by filename (without extension)
+sendEmail --config-email example --message-html html_b
+```
+
+| Argument | Behaviour |
+|----------|-----------|
+| *(omitted)* | Resolves `html.htm` or `html.html` in the email's `html/` folder as the default; throws if not found |
+| *(flag only, no value)* | Same as omitted — resolves default `html.htm[l]`; throws if not found |
+| Numeric (e.g. `1`) | Uses the file at that index in the `"html"` array; throws if out of range |
+| String match (e.g. `html_b`) | Uses the file with that name from the `"html"` array; throws if not in the array |
+| String with extension (e.g. `./custom.htm`) | Resolved from CWD (see below) |
+
+> The default `html.htm[l]` file is **not required** to be listed in the `"html"` array.
+
+#### With `--config-email` — `"html"` is a string
+
+When `email.json` has `"html": "html_a"`, the file is resolved automatically from the email's `html/` folder. `--message-html` is not needed for this case. If an argument with an extension is supplied, it is treated as a CWD path (see below).
+
+#### With `--config-email` — argument with file extension (any `"html"` type)
+
+When the argument contains an extension, it overrides resolution entirely and is resolved relative to CWD:
+
+```bash
+sendEmail --config-email example --message-html ./overrides/custom.htm
+```
+
+- Throws if the file does not exist at the CWD-relative path
+- If the argument has **no extension** and does not match a value in `"html"`, a configuration error is thrown
 
 ---
 
@@ -576,7 +644,7 @@ Properties available in `config/emails/<name>/email.json`:
 | `from` | `string` | Account name (e.g. `"_default"`) or an explicit email address. |
 | `replyTo` | `string \| string[]` | Reply-to address(es). |
 | `subject` | `string` | Subject line. Supports template variables (e.g. `{{contact.name}}`). |
-| `html` | `string \| string[]` | HTML file name(s) relative to the email's `html/` folder, or a full path from root. |
+| `html` | `string \| string[]` | **String:** HTML filename resolved automatically from the email's `html/` folder. **Array/object:** catalog of available HTML files selectable via `--message-html`; omitting `--message-html` (or passing it as a flag) resolves the default `html.htm[l]`. |
 | `text` | `string` | Plain-text message file path. |
 | `attachments` | `string` | Reference to the `emailAttachments` export in the paired `email.js`. |
 | `globals` | `string[]` | Global attachment group names to include (e.g. `["footer"]`). |

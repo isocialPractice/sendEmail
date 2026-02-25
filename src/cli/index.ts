@@ -57,7 +57,7 @@ export async function run(argv?: string[]): Promise<void> {
   }
 
   // ── Tool: Copy ────────────────────────────────────────────────────────────
-  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined) {
+  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined || opts.copyConfigNoAccount !== undefined) {
     const cwd = process.cwd();
     const cwdName = path.basename(cwd);
     const parentName = path.basename(path.dirname(cwd));
@@ -69,10 +69,17 @@ export async function run(argv?: string[]): Promise<void> {
     }
 
     const copyTool = new CopyTool();
-    const isConfigMode = opts.copyConfig !== undefined;
-    const rawDest = opts.copyConfig ?? opts.copyTool ?? opts.copy;
-    const dest = typeof rawDest === 'string' ? rawDest : path.join(cwd, 'sendEmail');
-    await copyTool.copy(packageRoot(), dest, isConfigMode ? 'config' : 'tools');
+
+    if (opts.copyConfigNoAccount !== undefined) {
+      const rawDest = opts.copyConfigNoAccount;
+      const dest = typeof rawDest === 'string' ? rawDest : path.join(cwd, 'sendEmail');
+      await copyTool.copy(packageRoot(), dest, 'config-no-account');
+    } else {
+      const isConfigMode = opts.copyConfig !== undefined;
+      const rawDest = opts.copyConfig ?? opts.copyTool ?? opts.copy;
+      const dest = typeof rawDest === 'string' ? rawDest : path.join(cwd, 'sendEmail');
+      await copyTool.copy(packageRoot(), dest, isConfigMode ? 'config' : 'tools');
+    }
     return;
   }
 
@@ -96,13 +103,42 @@ export async function run(argv?: string[]): Promise<void> {
   // ── Email Sending ─────────────────────────────────────────────────────────
 
   const rootPath = findRootPath();
+  const isLocalCopy = rootPath !== packageRoot();
   const engineConfig = createEngineConfig(rootPath);
+
+  // --config-email + copied instance: resolve accounts path
+  // If accounts/ is missing from the local copy (user removed it), fall back to
+  // root _default.js. If it exists but fails to load, throw a descriptive error.
+  let localCopyHasAccounts = false;
+  if (opts.configEmail && isLocalCopy) {
+    if (!existsSync(engineConfig.accountsPath)) {
+      engineConfig.accountsPath = path.join(packageRoot(), 'config', 'accounts');
+    } else {
+      localCopyHasAccounts = true;
+    }
+  }
+
   const engine = new EmailEngine(engineConfig);
   const attachmentLoader = new AttachmentLoader(engineConfig);
   const templateEngine = new TemplateEngine();
 
   // Initialize with specified or default account
-  await engine.initialize(opts.account);
+  if (localCopyHasAccounts) {
+    try {
+      await engine.initialize(opts.account);
+    } catch (err) {
+      throw new ConfigurationError(
+        `Account could not be loaded from local config copy at '${rootPath}'`,
+        [
+          `Accounts path: ${engineConfig.accountsPath}`,
+          err instanceof Error ? err.message : String(err),
+        ],
+        `Check that '${opts.account ?? '_default'}.js' in config/accounts/ has valid credentials, or remove config/accounts/ to fall back to the sendEmail root default account.`
+      );
+    }
+  } else {
+    await engine.initialize(opts.account);
+  }
 
   // ── Raw Mode: -t / --text ─────────────────────────────────────────────────
   if (opts.mode === SendMode.RAW && opts.text) {
@@ -173,6 +209,24 @@ export async function run(argv?: string[]): Promise<void> {
 
   // Build overrides from CLI options
   const overrides = buildOverrides(opts);
+
+  // Resolve --message-html against email config (when --config-email is used)
+  if (opts.configEmail) {
+    const resolvedHtml = await resolveMessageHtml(
+      opts.messageHtml,
+      emailConfig,
+      opts.configEmail,
+      engineConfig.emailsPath
+    );
+    if (resolvedHtml !== undefined) {
+      overrides.html = resolvedHtml;
+      delete overrides.text; // html takes priority
+    }
+  } else if (opts.messageHtml && opts.messageHtml !== true) {
+    // No --config-email: treat messageHtml as a direct path
+    overrides.html = opts.messageHtml;
+    delete overrides.text;
+  }
 
   // Load attachments (shared by all list-based and normal modes)
   let attachments: Attachment[] = [];
@@ -466,6 +520,174 @@ async function loadGlobalConfigAttachments(
 }
 
 /**
+ * Resolve a --message-html option value against a configured email's html/ folder.
+ *
+ * Called only when --config-email is in use. Returns an absolute file path, or
+ * undefined when no special resolution is needed (engine uses emailConfig.html as-is).
+ *
+ * Resolution rules (based on email.json "html" property type):
+ *
+ * 1. "html" is array or object:
+ *    - No arg (flag-only or omitted) → resolve default html.htm[l]; throw if absent
+ *    - Numeric arg → use indexed entry from array; throw if out of range
+ *    - String arg in array → use matching entry; throw if file missing
+ *    - String arg NOT in array → throw
+ *
+ * 2. "html" is string, --message-html not passed → resolve the string as a filename
+ *    in the email's html/ folder (try .htm then .html).
+ *
+ * 3. --message-html has a string argument (any "html" type):
+ *    - Arg has extension → resolve from CWD; throw if not found
+ *    - Arg has no extension → must exist in "html" string/array, then html/ folder
+ */
+async function resolveMessageHtml(
+  messageHtmlOpt: string | true | undefined,
+  emailConfig: EmailConfig,
+  configEmailName: string,
+  emailsPath: string
+): Promise<string | undefined> {
+  const htmlFolder = path.resolve(emailsPath, configEmailName, 'html');
+  const htmlProperty = emailConfig.html;
+
+  const isArrayOrObject =
+    Array.isArray(htmlProperty) ||
+    (typeof htmlProperty === 'object' && htmlProperty !== null);
+  const isString = typeof htmlProperty === 'string';
+
+  // Helper: find the default html.htm[l] file
+  function findDefaultHtml(): string {
+    const htmPath = path.join(htmlFolder, 'html.htm');
+    const htmlPath = path.join(htmlFolder, 'html.html');
+    if (existsSync(htmPath)) return htmPath;
+    if (existsSync(htmlPath)) return htmlPath;
+    throw new ConfigurationError(
+      `No default HTML file found for email '${configEmailName}'`,
+      [`Checked: ${htmPath}`, `Checked: ${htmlPath}`],
+      `Create 'html.htm' or 'html.html' in config/emails/${configEmailName}/html/ to use as the default message HTML.`
+    );
+  }
+
+  // Helper: resolve a filename (with or without extension) to an absolute path
+  function resolveHtmlFile(fileName: string): string | null {
+    if (path.extname(fileName)) {
+      const p = path.join(htmlFolder, fileName);
+      return existsSync(p) ? p : null;
+    }
+    const htmP = path.join(htmlFolder, `${fileName}.htm`);
+    if (existsSync(htmP)) return htmP;
+    const htmlP = path.join(htmlFolder, `${fileName}.html`);
+    if (existsSync(htmlP)) return htmlP;
+    return null;
+  }
+
+  // ── Case 1: "html" is array or object ──────────────────────────────────────
+  if (isArrayOrObject) {
+    const htmlArray: string[] = Array.isArray(htmlProperty)
+      ? (htmlProperty as string[])
+      : Object.values(htmlProperty as Record<string, string>);
+
+    // No argument (flag-only or omitted) → use html.htm[l] default
+    if (messageHtmlOpt === undefined || messageHtmlOpt === true) {
+      return findDefaultHtml();
+    }
+
+    const arg = messageHtmlOpt;
+    const isNumeric = /^\d+$/.test(arg);
+
+    if (isNumeric) {
+      const idx = parseInt(arg, 10);
+      if (idx < 0 || idx >= htmlArray.length) {
+        throw new ConfigurationError(
+          `--message-html index ${idx} is out of range for email '${configEmailName}'`,
+          [`Valid range: 0–${htmlArray.length - 1}`, `Available: ${htmlArray.join(', ')}`],
+          `Use an index within the valid range or provide a filename from the "html" array.`
+        );
+      }
+      const fileName = htmlArray[idx];
+      const resolved = resolveHtmlFile(fileName);
+      if (!resolved) {
+        throw new ConfigurationError(
+          `HTML file '${fileName}' (index ${idx}) not found in html/ folder for email '${configEmailName}'`,
+          [`Looked in: ${htmlFolder}`],
+          `Ensure '${fileName}.htm' or '${fileName}.html' exists in config/emails/${configEmailName}/html/.`
+        );
+      }
+      return resolved;
+    }
+
+    // String argument — must exist in the "html" array
+    if (htmlArray.includes(arg)) {
+      const resolved = resolveHtmlFile(arg);
+      if (!resolved) {
+        throw new ConfigurationError(
+          `HTML file '${arg}' not found in html/ folder for email '${configEmailName}'`,
+          [`Looked in: ${htmlFolder}`],
+          `Ensure '${arg}.htm' or '${arg}.html' exists in config/emails/${configEmailName}/html/.`
+        );
+      }
+      return resolved;
+    }
+
+    throw new ConfigurationError(
+      `--message-html value '${arg}' not found in the "html" array for email '${configEmailName}'`,
+      [`Available: ${htmlArray.join(', ')}`],
+      `Use an index (0–${htmlArray.length - 1}), a filename from the array, or a full file path with extension.`
+    );
+  }
+
+  // ── Case 2: "html" is string, --message-html not passed ───────────────────
+  if (isString && messageHtmlOpt === undefined) {
+    const resolved = resolveHtmlFile(htmlProperty as string);
+    if (resolved) return resolved;
+    // Value does not resolve to a known file in the email html/ folder —
+    // return undefined and let the engine handle it via resolveInputPath.
+    return undefined;
+  }
+
+  // ── Case 3: --message-html has a string argument (any "html" type) ─────────
+  if (messageHtmlOpt !== undefined && messageHtmlOpt !== true) {
+    const arg = messageHtmlOpt;
+    const ext = path.extname(arg);
+
+    if (ext) {
+      // Has extension — resolve relative to CWD
+      const cwdResolved = path.resolve(process.cwd(), arg);
+      if (existsSync(cwdResolved)) return cwdResolved;
+      throw new ConfigurationError(
+        `--message-html file not found: ${arg}`,
+        [`Checked: ${cwdResolved}`],
+        `Provide a path relative to your working directory, or use a filename from the email config's "html" property.`
+      );
+    }
+
+    // No extension — must match a value in the "html" string or array
+    const valuesToCheck: string[] = Array.isArray(htmlProperty)
+      ? (htmlProperty as string[])
+      : (typeof htmlProperty === 'string' ? [htmlProperty as string] : []);
+
+    if (valuesToCheck.includes(arg)) {
+      const resolved = resolveHtmlFile(arg);
+      if (resolved) return resolved;
+      throw new ConfigurationError(
+        `--message-html file '${arg}' not found in html/ folder for email '${configEmailName}'`,
+        [`Looked in: ${htmlFolder}`],
+        `Ensure '${arg}.htm' or '${arg}.html' exists in config/emails/${configEmailName}/html/.`
+      );
+    }
+
+    throw new ConfigurationError(
+      `--message-html value '${arg}' not found in email config's "html" property for '${configEmailName}'`,
+      valuesToCheck.length > 0
+        ? [`Available: ${valuesToCheck.join(', ')}`]
+        : [`No "html" property configured for '${configEmailName}'`],
+      `Use a full file path with extension, or a filename listed in the email config's "html" property.`
+    );
+  }
+
+  return undefined;
+}
+
+/**
  * Build EmailConfig overrides from CLI options.
  */
 function buildOverrides(opts: ReturnType<typeof parseArguments>): Partial<EmailConfig & { attachments?: Attachment[] }> {
@@ -478,9 +700,8 @@ function buildOverrides(opts: ReturnType<typeof parseArguments>): Partial<EmailC
   if (opts.cc) overrides.cc = opts.cc.length === 1 ? opts.cc[0] : opts.cc;
   if (opts.bcc) overrides.bcc = opts.bcc.length === 1 ? opts.bcc[0] : opts.bcc;
 
-  // Message content
-  if (opts.messageHtml) overrides.html = opts.messageHtml;
-  else if (opts.messageText) overrides.text = opts.messageText;
+  // Message content (messageHtml resolved separately via resolveMessageHtml)
+  if (opts.messageText) overrides.text = opts.messageText;
   else if (opts.messageFile) overrides.html = opts.messageFile; // engine handles type detection
 
   return overrides;
