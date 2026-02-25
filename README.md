@@ -101,6 +101,10 @@ sendEmail --config-email billing --send-to client@example.com
 # Bulk send to list
 sendEmail --config-email newsletter --email-list subscribers --force
 
+# Copy tool to a project (auto-creates config/accounts/_default.js via setup)
+sendEmail --copy ./my-project           # full tool [null:reproductive <tools>]
+sendEmail --copy:config ./my-project    # config/support types only [null:reproductive <config>]
+
 # Show help
 sendEmail -h
 sendEmail -h options
@@ -321,3 +325,4 @@ See [docs/API.md](docs/API.md) for full API documentation.
 - [API.md](docs/API.md) — Engine API for developers
 - [EXAMPLES.md](docs/EXAMPLES.md) — Real-world usage examples
 - [TEMPLATING.md](docs/TEMPLATING.md) — Template variables, global tags, and config type system
+- [TYPES.md](docs/TYPES.md) — Full type reference (option types, config categories, send modes)

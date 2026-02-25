@@ -150,7 +150,9 @@ export interface CLIOptions {
   // Mode Options
   text?: [string, string];       // -t, --text [address] [message] (raw mode)
   force?: boolean;               // -f, --force (skip confirmation)
-  copy?: string;                 // -c, --copy [path] (copy tool)
+  copy?: string;                 // -c, --copy [path] (copy tool, default tools mode)
+  copyConfig?: string;           // -c:config, --copy:config [path] (copy config + support types only)
+  copyTool?: string;             // -c:tool, --copy:tool [path] (explicit full tool copy)
   help?: string;                 // -h, --help [section] (show help)
   test?: string;                 // --test [unitTest] (run tests)
 
@@ -202,16 +204,18 @@ export interface BulkSendResult {
  * Option type classifications (from docs/sendEmail.md)
  */
 export type OptionType =
-  | 'mixed'              // Can be string, array, or from config
-  | 'normal'             // Triggers normal send mode
-  | 'raw'                // Triggers raw send mode
-  | 'repetitive'         // Triggers repetitive (bulk) send mode
-  | 'null'               // Toggles default behavior on/off
-  | 'null:reproductive'  // Produces reusable instances (e.g., --copy, --test)
-  | 'null:productive'    // Documentation/maintenance (e.g., --help)
-  | 'boolean'            // Boolean flag, configurable (e.g., --log, --send-all)
-  | 'aggressive'         // Tool mode, disables sending
-  | 'passive';           // Requires an aggressive option to activate
+  | 'mixed'                        // Can be string, array, or from config
+  | 'normal'                       // Triggers normal send mode
+  | 'raw'                          // Triggers raw send mode
+  | 'repetitive'                   // Triggers repetitive (bulk) send mode
+  | 'null'                         // Toggles default behavior on/off
+  | 'null:reproductive'            // Produces reusable instances (e.g., --test)
+  | 'null:reproductive <config>'   // Config-only copy (--copy:config)
+  | 'null:reproductive <tools>'    // Full tool copy (--copy / --copy:tool)
+  | 'null:productive'              // Documentation/maintenance (e.g., --help)
+  | 'boolean'                      // Boolean flag, configurable (e.g., --log, --send-all)
+  | 'aggressive'                   // Tool mode, disables sending
+  | 'passive';                     // Requires an aggressive option to activate
 
 /**
  * CLI option definition
@@ -241,7 +245,7 @@ export interface CLIAttachment {
  * Configuration category — top-level grouping of sendEmail config files.
  * Used to distinguish which config/ subdirectory an item belongs to.
  */
-export type ConfigCategory = 'accounts' | 'globals' | 'emails';
+export type ConfigCategory = 'accounts' | 'globals' | 'emails' | 'support';
 
 /**
  * Account configuration item types.
@@ -311,7 +315,20 @@ export type EmailConfigType =
 /**
  * Union of all configuration item types across all categories.
  */
-export type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType;
+export type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType | SupportConfigType;
+
+/**
+ * Support item types — root-level support folders (img/, attachments/).
+ * Parent category: `support`
+ *
+ * - `support`               → generic support entry
+ * - `support <img>`         → img/ folder (embedded images)
+ * - `support <attachment>`  → attachments/ folder
+ */
+export type SupportConfigType =
+  | 'support'
+  | 'support <img>'
+  | 'support <attachment>';
 
 /**
  * Fully resolved structure of a global folder.

@@ -308,10 +308,10 @@ interface GlobalDataResolution {
 
 ### Configuration Type System
 
-Every item in `config/` is classified by a `ConfigItemType`. Full reference in [TEMPLATING.md](TEMPLATING.md#config-type-system).
+Every item in `config/` is classified by a `ConfigItemType`. Full reference in [TYPES.md](TYPES.md).
 
 ```typescript
-type ConfigCategory = 'accounts' | 'globals' | 'emails';
+type ConfigCategory = 'accounts' | 'globals' | 'emails' | 'support';
 
 type AccountConfigType = 'account' | 'account:default' | 'account:named';
 
@@ -327,7 +327,10 @@ type EmailConfigType =
   | 'email:data:html' | 'email:data:text'
   | 'email:message:file:html' | 'email:message:file:text';
 
-type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType;
+// Support types — root-level support folders (img/, attachments/)
+type SupportConfigType = 'support' | 'support <img>' | 'support <attachment>';
+
+type ConfigItemType = AccountConfigType | GlobalConfigType | EmailConfigType | SupportConfigType;
 ```
 
 ---

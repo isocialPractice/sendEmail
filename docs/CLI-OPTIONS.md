@@ -54,22 +54,59 @@ sendEmail --config-email newsletter --email-list subscribers --force
 
 ### `-c, --copy [path]`
 
-**Type:** `null:reproductive`
+**Type:** `null:reproductive <tools>`
 
-Copy the sendEmail tool to a specified path (or the current directory if `[path]` is omitted).
+Copy the sendEmail tool to a specified path (or a new `sendEmail/` directory in the current working directory if `[path]` is omitted). Default behaviour — alias for `--copy:tool`.
 
 ```bash
 sendEmail --copy ./my-project
 sendEmail -c /var/tools/sendEmail
-sendEmail -c                          # copies to CWD
+sendEmail -c                          # copies to CWD/sendEmail/
 ```
 
 > **Important:** `config/accounts/` is **never** copied — it contains sensitive credentials.
-> After copying, create your own `config/accounts/_default.js`.
+> Setup runs automatically after copying to create `config/accounts/_default.js` from the template.
 
 > **Local override (npm link):** If `sendEmail` is invoked via `npm link` from a directory
 > that contains a sendEmail copy (`sendEmail/config/emails/` or `./config/emails/`), that
 > local copy is used as the config root instead of the linked package.
+
+**Switch parameters** — specify `-c:<switch>` or `--copy:<switch>` to change copy behaviour:
+
+#### `-c:tool [path]` / `--copy:tool [path]`
+
+**Type:** `null:reproductive <tools>`
+
+Explicit full tool copy — identical to `-c` / `--copy`. Copies the entire sendEmail tool and runs setup.
+
+```bash
+sendEmail --copy:tool ./my-project
+sendEmail -c:tool /var/tools/sendEmail
+```
+
+#### `-c:config [path]` / `--copy:config [path]`
+
+**Type:** `null:reproductive <config>`
+
+Copy only configuration and support types. Does **not** copy tool files (`src/`, `bin/`, etc.).
+
+Copies:
+- `config/emails/` — email templates
+- `config/globals/` — global templates
+- `attachments/` — email attachments (`support <attachment>`)
+- `img/` — embedded images (`support <img>`)
+
+After copying, `.github/scripts/` is copied temporarily and the OS-appropriate setup script is run
+to create `config/accounts/_default.js`. The `.github/` folder is then removed from the destination.
+
+```bash
+sendEmail --copy:config ./my-project
+sendEmail -c:config /path/to/project
+```
+
+> **Local config override:** When `sendEmail` is invoked from a directory that contains a
+> `sendEmail/config/emails/` folder (created via `--copy:config`), those config types
+> take precedence over the sendEmail root config.
 
 ---
 

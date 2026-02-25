@@ -57,7 +57,7 @@ export async function run(argv?: string[]): Promise<void> {
   }
 
   // ── Tool: Copy ────────────────────────────────────────────────────────────
-  if (opts.copy !== undefined) {
+  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined) {
     const cwd = process.cwd();
     const cwdName = path.basename(cwd);
     const parentName = path.basename(path.dirname(cwd));
@@ -69,8 +69,10 @@ export async function run(argv?: string[]): Promise<void> {
     }
 
     const copyTool = new CopyTool();
-    const dest = typeof opts.copy === 'string' ? opts.copy : path.join(cwd, 'sendEmail');
-    await copyTool.copy(packageRoot(), dest);
+    const isConfigMode = opts.copyConfig !== undefined;
+    const rawDest = opts.copyConfig ?? opts.copyTool ?? opts.copy;
+    const dest = typeof rawDest === 'string' ? rawDest : path.join(cwd, 'sendEmail');
+    await copyTool.copy(packageRoot(), dest, isConfigMode ? 'config' : 'tools');
     return;
   }
 

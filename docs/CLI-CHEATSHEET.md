@@ -50,9 +50,16 @@ sendEmail --new-list clients
 # Reads: __sendEmail__clients-emails.txt, __sendEmail__clients-names.txt
 # Creates: lists/clients.json
 
-# Copy tool to project (excludes credentials, uses as local config root)
+# Copy tool to project (setup runs automatically, creates config/accounts/_default.js)
 sendEmail --copy ./my-project
 # Then: running sendEmail from ./my-project/ uses ./my-project/sendEmail/config/
+
+# Copy only config/support types (for local config override, no tool files)
+sendEmail --copy:config ./my-project
+# Copies: config/emails/, config/globals/, attachments/, img/
+
+# Explicit full tool copy
+sendEmail --copy:tool ./my-project
 
 # Show full help
 sendEmail -h
@@ -69,7 +76,9 @@ sendEmail --test
 |--------|-------|------|-------------|
 | `--account <name>` | | mixed | Account from `config/accounts/` |
 | `--config-email <name>` | | normal/rep | Template from `config/emails/` |
-| `--copy [path]` | `-c` | null:rep | Copy tool to path |
+| `--copy [path]` | `-c` | null:rep `<tools>` | Copy full tool to path (runs setup) |
+| `--copy:config [path]` | `-c:config` | null:rep `<config>` | Copy config/support types only |
+| `--copy:tool [path]` | `-c:tool` | null:rep `<tools>` | Explicit full tool copy |
 | `--help [section]` | `-h` | null:prod | Show help |
 | `--force` | `-f` | null | Skip confirmation |
 | `--test [name]` | | null:rep | Run tests |

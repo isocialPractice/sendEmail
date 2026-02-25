@@ -26,7 +26,9 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
   program
     .option('--account <name>', 'Specify a configured account from config/accounts/')
     .option('--config-email <name>', 'Use a configured email from config/emails/ [normal|repetitive]')
-    .option('-c, --copy [path]', 'Copy the sendEmail tool to a path (or CWD if no path) [null:reproductive]')
+    .option('-c, --copy [path]', 'Copy the sendEmail tool to a path (or CWD if no path) [null:reproductive <tools>]')
+    .option('--copy-config [path]', 'Copy only config/support types to a path (or CWD if no path) [null:reproductive <config>]')
+    .option('--copy-tool [path]', 'Copy the full sendEmail tool to a path (or CWD if no path) [null:reproductive <tools>]')
     .option('-h, --help [section]', 'Display help documentation; optionally specify a section [null:productive]')
     .option('-f, --force', 'Skip the confirmation prompt before sending [null]')
     .option('--test [unitTest]', 'Run all tests or a specific unit test [null:reproductive]')
@@ -107,6 +109,8 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     listToolPath: opts['listToolPath'] as string | undefined,
     force: opts['force'] as boolean | undefined,
     copy: opts['copy'] as string | undefined,
+    copyConfig: opts['copyConfig'] as string | undefined,
+    copyTool: opts['copyTool'] as string | undefined,
     help: opts['help'] as string | undefined,
     test: opts['test'] as string | undefined,
     globalConfig: opts['globalConfig'] as string[] | undefined,
@@ -137,7 +141,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
  */
 function determineSendMode(opts: CLIOptions): SendMode {
   // Tool modes (no sending)
-  if (opts.copy !== undefined) return SendMode.RAW; // tool mode, handled before send
+  if (opts.copy !== undefined || opts.copyTool !== undefined || opts.copyConfig !== undefined) return SendMode.RAW; // tool mode, handled before send
   if (opts.newList !== undefined) return SendMode.RAW; // tool mode
   if (opts.test !== undefined) return SendMode.RAW; // tool mode
 
@@ -157,15 +161,21 @@ function determineSendMode(opts: CLIOptions): SendMode {
 }
 
 /**
- * Normalize argv to convert --global-config:<switch> colon-syntax to kebab-case
+ * Normalize argv to convert colon-syntax options to kebab-case
  * before passing to Commander, which does not support colons in option names.
- *   --global-config:root  →  --global-config-root
- *   --global-config:path  →  --global-config-path
+ *   --global-config:root   →  --global-config-root
+ *   --global-config:path   →  --global-config-path
+ *   -c:config              →  --copy-config
+ *   --copy:config          →  --copy-config
+ *   -c:tool                →  --copy-tool
+ *   --copy:tool            →  --copy-tool
  */
 function normalizeArgv(argv: string[]): string[] {
   return argv.map(arg => {
     if (arg === '--global-config:root') return '--global-config-root';
     if (arg === '--global-config:path') return '--global-config-path';
+    if (arg === '-c:config' || arg === '--copy:config') return '--copy-config';
+    if (arg === '-c:tool' || arg === '--copy:tool') return '--copy-tool';
     return arg;
   });
 }
