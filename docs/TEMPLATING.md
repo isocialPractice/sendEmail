@@ -21,6 +21,73 @@ Use `{{variable}}` syntax in subject lines, HTML templates, and text files to su
 | `{{list.index}}` | Current recipient index (bulk send) | `3` |
 | `{{list.count}}` | Total recipient count (bulk send) | `150` |
 
+### Date Format Variables (dates.*)
+
+The `dates.*` variables provide flexible date formatting powered by [`@jhauga/getdate`](https://github.com/jhauga/getDate). These are ideal for reports, summaries, and any email that references time periods.
+
+| Variable | Description | Example Value |
+|---|---|---|
+| `{{dates.date}}` | Date in MM-DD-YY format | `02-26-26` |
+| `{{dates.fullDate}}` | Date in MM-DD-YYYY format | `02-26-2026` |
+| `{{dates.slashDate}}` | Date with slash separator MM/DD/YY | `02/26/26` |
+| `{{dates.terminalDate}}` | Terminal format MM/DD/YYYY | `02/26/2026` |
+| `{{dates.isoDate}}` | ISO format YYYY-MM-DD | `2026-02-26` |
+| `{{dates.day}}` | Day of month (two digits) | `26` |
+| `{{dates.monthNumber}}` | Month number (two digits) | `02` |
+| `{{dates.month}}` | Full month name | `February` |
+| `{{dates.monthShort}}` | Abbreviated month name | `Feb` |
+| `{{dates.lastMonth}}` | Full previous month name | `January` |
+| `{{dates.lastMonthShort}}` | Abbreviated previous month name | `Jan` |
+| `{{dates.quarter}}` | Current fiscal quarter (1-4) | `1` |
+| `{{dates.lastQuarter}}` | Previous fiscal quarter (1-4) | `4` |
+| `{{dates.season}}` | Current season name | `Winter` |
+| `{{dates.year}}` | Four-digit current year | `2026` |
+| `{{dates.twoDigitYear}}` | Two-digit year | `26` |
+| `{{dates.lastYear}}` | Four-digit previous year | `2025` |
+| `{{dates.nextYear}}` | Four-digit next year | `2027` |
+| `{{dates.isLeapYear}}` | Leap year indicator (1 or 0) | `0` |
+
+#### Using dates.* in Subject Lines
+
+```json
+{
+  "subject": "{{dates.lastMonth}} - Revenue Summary"
+}
+```
+
+Result: `"January - Revenue Summary"` (when sent in February)
+
+#### Using dates.* in HTML Templates
+
+```html
+<h1>Quarterly Report - Q{{dates.quarter}} {{dates.year}}</h1>
+<p>Covering {{dates.lastMonth}} through {{dates.month}}</p>
+<p>Generated on {{dates.fullDate}}</p>
+```
+
+#### Common Use Cases
+
+**Monthly reports:**
+```json
+{
+  "subject": "{{dates.lastMonth}} {{dates.year}} - Monthly Summary"
+}
+```
+
+**Quarterly reports:**
+```json
+{
+  "subject": "Q{{dates.lastQuarter}} {{dates.lastYear}} Financial Report"
+}
+```
+
+**Year-end reports:**
+```json
+{
+  "subject": "{{dates.lastYear}} Annual Review"
+}
+```
+
 ### Legacy Placeholders
 
 The following legacy placeholders are supported for backward compatibility:

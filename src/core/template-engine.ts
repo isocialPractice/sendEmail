@@ -5,6 +5,7 @@
  */
 
 import type { TemplateVariables, EmailContact } from './types.js';
+import { buildDatesVars } from '../utils/dates-helper.js';
 
 /**
  * Map of legacy placeholder names to new-style variable paths.
@@ -84,8 +85,12 @@ export class TemplateEngine {
       }
     }
 
+    // Build dates.* variables from @jhauga/getdate
+    const datesVars = buildDatesVars();
+
     return {
       ...contactVars,
+      ...datesVars,
       'date': now.toISOString().split('T')[0],
       'date.formatted': now.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -109,7 +114,11 @@ export class TemplateEngine {
   ): TemplateVariables {
     const now = new Date();
 
+    // Build dates.* variables from @jhauga/getdate
+    const datesVars = buildDatesVars();
+
     return {
+      ...datesVars,
       'contact.email': to,
       'CHANGE_SEND_TO': to,
       'subject': subject ?? '',

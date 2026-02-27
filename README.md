@@ -233,6 +233,34 @@ Use in subject lines, HTML templates, and configurable text:
 | `{{list.index}}` | Current index (bulk send) |
 | `{{list.count}}` | Total recipients |
 
+### Date Formatting (dates.*)
+
+Extended date formatting powered by [`@jhauga/getdate`](https://github.com/jhauga/getDate):
+
+| Variable | Value |
+| -------- | ----- |
+| `{{dates.lastMonth}}` | Previous month name (`January`) |
+| `{{dates.month}}` | Current month name (`February`) |
+| `{{dates.quarter}}` | Current fiscal quarter (`1`) |
+| `{{dates.lastQuarter}}` | Previous fiscal quarter (`4`) |
+| `{{dates.year}}` | Four-digit year (`2026`) |
+| `{{dates.lastYear}}` | Previous year (`2025`) |
+| `{{dates.nextYear}}` | Next year (`2027`) |
+| `{{dates.fullDate}}` | Full date MM-DD-YYYY (`02-26-2026`) |
+| `{{dates.isoDate}}` | ISO date YYYY-MM-DD (`2026-02-26`) |
+
+**Example — monthly report subject:**
+
+```json
+{
+  "subject": "{{dates.lastMonth}} {{dates.year}} - Revenue Summary"
+}
+```
+
+Result: `"January 2026 - Revenue Summary"` (when sent in February)
+
+See [TEMPLATING.md](docs/TEMPLATING.md) for full variable reference.
+
 Legacy placeholders (`CH-EMAILONLIST`, `CHANGE_SEND_TO`) are also supported.
 
 ---

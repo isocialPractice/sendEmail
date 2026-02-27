@@ -359,6 +359,64 @@ interface BulkSendResult {
 
 ---
 
+## Date Formatting Utilities
+
+The engine includes date formatting utilities powered by [`@jhauga/getdate`](https://github.com/jhauga/getDate). These provide `{{dates.*}}` template variables automatically available in all email templates.
+
+### `buildDatesVars()`
+
+Build all `dates.*` template variables. Called automatically by the template engine when building email messages.
+
+```typescript
+import { buildDatesVars } from 'send-email/dist/utils/dates-helper.js';
+
+const datesVars = buildDatesVars();
+console.log(datesVars['dates.lastMonth']);  // "January" (in February)
+console.log(datesVars['dates.quarter']);    // 1
+console.log(datesVars['dates.year']);       // "2026"
+```
+
+### Available dates.* Variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `dates.date` | `string` | MM-DD-YY format |
+| `dates.fullDate` | `string` | MM-DD-YYYY format |
+| `dates.slashDate` | `string` | MM/DD/YY format |
+| `dates.terminalDate` | `string` | MM/DD/YYYY format |
+| `dates.isoDate` | `string` | YYYY-MM-DD format |
+| `dates.day` | `string` | Day of month (two digits) |
+| `dates.monthNumber` | `string` | Month number (two digits) |
+| `dates.month` | `string` | Full month name |
+| `dates.monthShort` | `string` | Abbreviated month name |
+| `dates.lastMonth` | `string` | Full previous month name |
+| `dates.lastMonthShort` | `string` | Abbreviated previous month name |
+| `dates.quarter` | `number` | Current fiscal quarter (1-4) |
+| `dates.lastQuarter` | `number` | Previous fiscal quarter (1-4) |
+| `dates.season` | `string` | Current season name |
+| `dates.year` | `string` | Four-digit current year |
+| `dates.twoDigitYear` | `string` | Two-digit year |
+| `dates.lastYear` | `string` | Four-digit previous year |
+| `dates.nextYear` | `string` | Four-digit next year |
+| `dates.isLeapYear` | `number` | Leap year indicator (1 or 0) |
+
+### Usage in email.json
+
+Template variables work in `subject`, `to`, `cc`, `bcc`, and `replyTo` fields:
+
+```json
+{
+  "subject": "{{dates.lastMonth}} {{dates.year}} - Revenue Summary",
+  "to": "reports@company.com"
+}
+```
+
+When sent in February 2026, the subject becomes: `"January 2026 - Revenue Summary"`
+
+See [TEMPLATING.md](TEMPLATING.md) for full template variable documentation.
+
+---
+
 ## VS Code Extension Example
 
 ```typescript
