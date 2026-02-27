@@ -2,6 +2,8 @@
 
 Real-world examples for the `sendEmail` command-line tool.
 
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?examples)
+
 ---
 
 ## Beginner Examples
@@ -444,6 +446,96 @@ sendEmail --new-list report
 # Send reports
 sendEmail --config-email monthly-report --email-list report --force
 ```
+
+---
+
+## Terminal Format Mode Examples
+
+Use `--command-format` as the **first option** to embed live command output in argument values.
+
+> See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for full syntax reference and prohibited commands.
+
+### Example T1: Git Commit as Email Subject
+
+Send a notification email with the latest commit hash and title as the subject:
+
+```bash
+sendEmail --command-format \
+  --send-to team@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-file ./deploy-notify.html \
+  --force
+```
+
+Subject becomes: `a1b2c3d (HEAD -> main) fix: update login validation`
+
+### Example T2: Full Commit Message as Email Body
+
+Send the full commit message (title + body) as the email body:
+
+```bash
+sendEmail --command-format \
+  --send-to dev@example.com \
+  --subject "Deploy: $> {{ git log --oneline -1 }};" \
+  --message-text "$>command: {{ git log -1 --pretty=%B }};"
+```
+
+### Example T3: Commit Message + Changed Files
+
+Chain multiple commands to include the commit message and a list of changed files:
+
+```bash
+sendEmail --command-format \
+  --send-to qa@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-text "$>command: {{ git log -1 --pretty=%B }}; $>command: {{ echo }}; $>command: {{ git show --name-only HEAD | tail -n +8 }};"
+```
+
+The `--message-text` argument resolves to (commands concatenated with newlines):
+
+```
+fix: update Copilot tool references for infra change
+
+- Add Workflows as a new CopilotCategory to match the awesome-copilot
+  repo's workflows/ folder...
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+package.json
+src/folderMappingPanel.ts
+src/treeProvider.ts
+src/types.ts
+```
+
+### Example T4: Mix of Raw Data and Terminal Format
+
+Raw values (no `$>` syntax) pass through unchanged; only the subject uses terminal format:
+
+```bash
+sendEmail --command-format \
+  --send-to john@example.com \
+  --cc archive@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-file ./template.html \
+  --force
+```
+
+`--cc` and `--message-file` are raw and unchanged. Only `--subject` is expanded.
+
+### Example T5: Template Variables Combined with Terminal Format
+
+Terminal Mode expands `$>command: {{ ... }};` blocks first, then the template engine
+substitutes `{{variables}}`. Both can coexist in the same invocation:
+
+```bash
+sendEmail --command-format \
+  --config-email newsletter \
+  --email-list subscribers \
+  --subject "$> {{ git log --oneline -1 }}; — {{dates.month}} {{dates.year}}" \
+  --force
+```
+
+Subject after full resolution: `a1b2c3d fix: update login — February 2026`
 
 ---
 

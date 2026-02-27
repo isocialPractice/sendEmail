@@ -21,6 +21,7 @@ import { info, success, error as logError, warn } from '../utils/logger.js';
 import { writeLog, isLogEnabled } from '../utils/email-logger.js';
 import { SendMode } from '../core/types.js';
 import type { EmailConfig, Attachment, TemplateVariables, EmailContact, EmailList } from '../core/types.js';
+import { applyTerminalFormat, TerminalModeError } from './terminal-format.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +50,29 @@ function findRootPath(): string {
  */
 export async function run(argv?: string[]): Promise<void> {
   const opts = parseArguments(argv);
+
+  // ── Terminal Mode: --command-format ───────────────────────────────────────
+  // Error if --command-format was passed but NOT as the first option.
+  if (opts.commandFormat === false) {
+    logError('`--command-format` was passed improperly, and switched off. Did you read the documentation? `--command-format` must be the first argument if used. Try:');
+    logError(`  sendEmail --command-format ... <your-parameters>`);
+    process.exit(1);
+  }
+
+  // Only active when --command-format is the FIRST option.
+  // Processes all string-valued CLI arguments for $>command: {{ ... }}; syntax.
+  if (opts.commandFormat === true) {
+    try {
+      applyTerminalFormat(opts as unknown as Record<string, unknown>);
+    } catch (err) {
+      if (err instanceof TerminalModeError) {
+        logError(err.message);
+        if (err.suggestion) logError(`  Suggestion: ${err.suggestion}`);
+        process.exit(1);
+      }
+      throw err;
+    }
+  }
 
   // ── Help ──────────────────────────────────────────────────────────────────
   if (opts.help !== undefined) {

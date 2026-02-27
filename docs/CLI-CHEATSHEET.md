@@ -2,6 +2,8 @@
 
 Quick reference for the `sendEmail` command-line tool.
 
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?cli-cheatsheet)
+
 ---
 
 ## Common Patterns
@@ -83,6 +85,34 @@ sendEmail --test
 
 ---
 
+## Terminal Format Mode
+
+Use `--command-format` (must be **first** option) to embed live command output in argument values:
+
+```bash
+# Git commit hash as subject
+sendEmail --command-format \
+  --send-to dev@example.com \
+  --subject "$> {{ git log --oneline -1 }};"
+
+# Full commit message as email body (multiple commands, concatenated)
+sendEmail --command-format \
+  --send-to qa@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-text "$>command: {{ git log -1 --pretty=%B }}; $>command: {{ echo }}; $>command: {{ git show --name-only HEAD | tail -n +8 }};"
+
+# Mix of raw data and terminal format — raw values pass through unchanged
+sendEmail --command-format \
+  --send-to john@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-file ./notify.html \
+  --force
+```
+
+> See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for syntax rules, prohibited commands, and full examples.
+
+---
+
 ## Options Quick Reference
 
 | Option | Short | Type | Description |
@@ -97,6 +127,7 @@ sendEmail --test
 | `--force` | `-f` | null | Skip confirmation |
 | `--test [name]` | | null:rep | Run tests |
 | `--text <addr> [msg]` | `-t` | raw | Quick text email |
+| `--command-format` | | terminal | Activate terminal mode (must be first option) |
 | `--send-to <addr...>` | | mixed | Recipient(s) |
 | `--subject <text>` | | mixed | Email subject |
 | `--message-file <path>` | | mixed | Message file (.html/.txt/.md) |

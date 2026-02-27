@@ -4,6 +4,8 @@ Command-line tool to send an email, or automate repetitive emails.
 
 Built with TypeScript and [nodemailer](https://nodemailer.com/). Engine-like design — can be embedded in VS Code extensions, GUIs, or any Node.js application.
 
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html)
+
 ---
 
 ## Quick Start
@@ -101,6 +103,11 @@ sendEmail --config-email billing --send-to client@example.com
 # Bulk send to list
 sendEmail --config-email newsletter --email-list subscribers --force
 
+# Terminal Format Mode — embed live command output in argument values (--command-format first)
+sendEmail --command-format \
+  --send-to dev@example.com \
+  --subject "$> {{ git log --oneline -1 }};"
+
 # Copy tool to a project (auto-creates config/accounts/_default.js via setup)
 sendEmail --copy ./my-project           # full tool [null:reproductive <tools>]
 sendEmail --copy:config ./my-project    # config/support types only [null:reproductive <config>]
@@ -132,7 +139,8 @@ sendEmail/
 │   │   ├── index.ts           # Main CLI runner
 │   │   ├── parser.ts          # Argument parsing
 │   │   ├── help.ts            # Help documentation
-│   │   └── prompts.ts         # Confirmation prompts
+│   │   ├── prompts.ts         # Confirmation prompts
+│   │   └── terminal-format.ts # --command-format terminal mode processor
 │   ├── utils/                 # Utilities
 │   │   ├── file-utils.ts
 │   │   ├── logger.ts
@@ -167,10 +175,14 @@ sendEmail/
 │   ├── mock/server/           # Mock SMTP server
 │   └── logs/                  # Test logs
 └── docs/
+    ├── CONFIGURE.md           # Email template and global configuration
     ├── CLI-OPTIONS.md         # Full options reference
     ├── CLI-CHEATSHEET.md      # Quick reference
     ├── API.md                 # Engine API documentation
-    └── EXAMPLES.md            # Real-world examples
+    ├── EXAMPLES.md            # Real-world examples
+    ├── TEMPLATING.md          # Template variables and global tags
+    ├── TERMINAL-FORMAT.md     # Terminal Mode (--command-format)
+    └── TYPES.md               # Type reference
 ```
 
 ---
@@ -348,9 +360,18 @@ See [docs/API.md](docs/API.md) for full API documentation.
 
 ## Documentation
 
-- [CLI-OPTIONS.md](docs/CLI-OPTIONS.md) — Complete options reference
-- [CLI-CHEATSHEET.md](docs/CLI-CHEATSHEET.md) — Quick reference
-- [API.md](docs/API.md) — Engine API for developers
-- [EXAMPLES.md](docs/EXAMPLES.md) — Real-world usage examples
-- [TEMPLATING.md](docs/TEMPLATING.md) — Template variables, global tags, and config type system
-- [TYPES.md](docs/TYPES.md) — Full type reference (option types, config categories, send modes)
+- [CONFIGURE.md](docs/CONFIGURE.md) — How to configure email templates in `config/emails/` and global elements in `config/globals/`. Covers all `email.json` properties, `email.js` attachment definitions, HTML and text file layout, and complete examples including multiple recipients, date helper syntax, inline lists, and DSN.
+
+- [CLI-OPTIONS.md](docs/CLI-OPTIONS.md) — Complete reference for every command-line option. Documents configurable options (usable in both CLI and `email.json`), non-configurable options, and tool options, including full syntax for `--config-email`, `--email-list`, `--global-config`, and the attachment flags.
+
+- [CLI-CHEATSHEET.md](docs/CLI-CHEATSHEET.md) — Quick-reference card for the most common `sendEmail` patterns. Covers raw mode, normal mode, bulk send, and the most frequently used flags in a compact format.
+
+- [API.md](docs/API.md) — Engine API documentation for embedding `EmailEngine` in TypeScript/JavaScript projects. Covers the `EmailEngine` class, all public methods, configuration interfaces, and examples for library usage.
+
+- [EXAMPLES.md](docs/EXAMPLES.md) — Over 20 annotated real-world examples covering every send mode. Includes bulk send workflows, inline image attachments, template variable usage, terminal format mode, and account configuration patterns.
+
+- [TEMPLATING.md](docs/TEMPLATING.md) — Full reference for template variables, the `{% global %}` tag, and global folder structure. Explains resolution rules, content preference (HTML vs text), nested globals, and the config type classification system.
+
+- [TERMINAL-FORMAT.md](docs/TERMINAL-FORMAT.md) — Reference for Terminal Mode (`--command-format`), which lets you embed live shell command output in CLI argument values. Documents the `$>command: {{ }};` syntax, prohibited commands, and interaction with template variables.
+
+- [TYPES.md](docs/TYPES.md) — Full type reference for `OptionType`, `ConfigItemType`, and send mode classifications. Useful for understanding how options and config files are categorized internally and for contributors extending the tool.

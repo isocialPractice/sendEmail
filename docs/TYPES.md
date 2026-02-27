@@ -2,6 +2,8 @@
 
 Comprehensive documentation for all type systems used in the `sendEmail` project.
 
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?types)
+
 ---
 
 ## Option Types
@@ -21,7 +23,8 @@ type OptionType =
   | 'null:productive'
   | 'boolean'
   | 'aggressive'
-  | 'passive';
+  | 'passive'
+  | 'terminal';
 ```
 
 ### `mixed`
@@ -138,6 +141,24 @@ Activates a tool mode that completely disables email sending. Tool options.
 Requires an `aggressive` option to have effect. Provides an argument to the aggressive option.
 
 **Examples:** `--list-tool-path` (requires `--new-list`)
+
+---
+
+### `terminal`
+
+Activates **Terminal Mode** when the option is the very first flag passed on the command line. In terminal mode, argument values may contain `$>command: {{ <cmd> }};` blocks that are evaluated and replaced with live terminal output before any other processing.
+
+If `--command-format` is not the first option, it is silently ignored and has no effect.
+
+**Examples:** `--command-format`
+
+```bash
+sendEmail --command-format \
+  --send-to dev@example.com \
+  --subject "$> {{ git log --oneline -1 }};"
+```
+
+> See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for full syntax and prohibited-command reference.
 
 ---
 
@@ -322,3 +343,56 @@ The `null:reproductive` family produces reusable instances or runs processes. Th
 **Setup** for `<tools>`: creates `config/accounts/` and copies `_default.js` from `.github/scripts/accounts/` directly in Node.js.
 
 **Setup** for `<config>`: copies `.github/scripts/` temporarily, runs `setup.sh` (Unix/Cygwin/Git Bash) or `setup.bat` (Windows CMD), then removes `.github/` from the destination.
+
+---
+
+## Terminal Format Types
+
+Types used by the **Terminal Mode** processor (`--command-format`).
+
+Exported from `src/core/types.ts` and produced by `src/cli/terminal-format.ts`.
+
+### `TerminalCommandResult`
+
+Result of executing a single terminal command block.
+
+```typescript
+interface TerminalCommandResult {
+  command: string;   // Raw command string that was executed
+  output: string;    // Captured stdout (trimmed of trailing newline)
+  exitCode: number;  // Exit code from child_process
+}
+```
+
+### `TerminalFormatResult`
+
+Result of processing a complete terminal-format argument value (which may contain multiple command blocks).
+
+```typescript
+interface TerminalFormatResult {
+  original: string;                  // Original argument value before processing
+  resolved: string;                  // Final value after executing all commands and joining outputs
+  commands: TerminalCommandResult[]; // Individual result for each command block
+}
+```
+
+The `resolved` value is the concatenation of each command's `output`, joined by `\n`. If a single command is present, `resolved` equals that command's output.
+
+### `TerminalModeError`
+
+Thrown when terminal format syntax is malformed or a prohibited command is detected.
+
+```typescript
+class TerminalModeError extends Error {
+  readonly command: string;    // The command string or argument value that triggered the error
+  readonly suggestion: string; // Human-readable fix suggestion
+}
+```
+
+Error message format:
+
+```
+Terminal Mode Error: <message>
+```
+
+> See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for error message examples and the complete prohibited-command list.

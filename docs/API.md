@@ -4,6 +4,10 @@ Documentation for using the `EmailEngine` as a library in TypeScript/JavaScript 
 
 The engine is interface-agnostic and can be embedded in VS Code extensions, GUI applications, web APIs, or any Node.js application.
 
+> **Note:** Terminal Mode (`--command-format`) is a CLI-argument pre-processor and does not apply when using `EmailEngine` directly as a library. See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for CLI usage.
+
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?api)
+
 ---
 
 ## Installation

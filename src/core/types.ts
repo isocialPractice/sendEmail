@@ -162,6 +162,9 @@ export interface CLIOptions {
   globalConfigRoot?: string[];   // --global-config:root <args> (sendEmail root only)
   globalConfigPath?: string[];   // --global-config:path <args> (CWD path only)
 
+  // Terminal Format Options
+  commandFormat?: boolean;       // --command-format (must be first option; activates terminal mode)
+
   // Derived
   mode?: SendMode;               // Determined from options
 }
@@ -217,7 +220,8 @@ export type OptionType =
   | 'null:productive'              // Documentation/maintenance (e.g., --help)
   | 'boolean'                      // Boolean flag, configurable (e.g., --log, --send-all)
   | 'aggressive'                   // Tool mode, disables sending
-  | 'passive';                     // Requires an aggressive option to activate
+  | 'passive'                      // Requires an aggressive option to activate
+  | 'terminal';                    // Activates terminal mode when passed as first option (--command-format)
 
 /**
  * CLI option definition
@@ -373,4 +377,31 @@ export interface GlobalDataResolution {
   htmlDataType?: 'global:data:html' | 'global:data:folder:html';
   /** Type classification for where the text data was found */
   textDataType?: 'global:data:text' | 'global:data:folder:data';
+}
+
+// ─── Terminal Format Types ─────────────────────────────────────────────────────
+
+/**
+ * Result of executing a single terminal command via terminal mode.
+ */
+export interface TerminalCommandResult {
+  /** The raw command string that was executed */
+  command: string;
+  /** Captured stdout output (trimmed) */
+  output: string;
+  /** Exit code from the child process */
+  exitCode: number;
+}
+
+/**
+ * Result of parsing and executing a complete terminal-format argument value.
+ * A single argument may contain multiple `$>command: {{ ... }};` blocks.
+ */
+export interface TerminalFormatResult {
+  /** Original argument value before processing */
+  original: string;
+  /** Resolved value after executing all commands and concatenating outputs */
+  resolved: string;
+  /** Individual results from each command block found in the argument */
+  commands: TerminalCommandResult[];
 }

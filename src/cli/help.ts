@@ -26,6 +26,7 @@ const OPTIONS: OptionEntry[] = [
   { flag: '-f, --force', description: 'Skip confirmation prompt before sending', type: 'null', configurable: false },
   { flag: '--test [unitTest]', description: 'Run all tests or a specific unit test by name', type: 'null:reproductive', configurable: false },
   { flag: '-t, --text <address> [message]', description: 'Quick text email: send a raw message directly to address', type: 'raw', configurable: false },
+  { flag: '--command-format', description: 'Activate terminal mode: argument values may contain $>command: {{ <cmd> }}; syntax to embed live command output. MUST be the first option — throws an error and terminates if passed in any other position.', type: 'terminal', configurable: false },
   // Configurable
   { flag: '--send-to <address...>', description: 'Recipient address(es)', type: 'mixed', configurable: true },
   { flag: '--subject <text>', description: 'Email subject line', type: 'mixed', configurable: true },
@@ -116,6 +117,7 @@ function printFullHelp(): void {
   console.log(`  ${TOOL_NAME} --config-email billing --send-to client@example.com`);
   console.log(`  ${TOOL_NAME} --config-email newsletter --email-list subscribers --force`);
   console.log(`  ${TOOL_NAME} --config-email billing --email-list clients --send-all --force`);
+  console.log(`  ${TOOL_NAME} --command-format --send-to john@example.com --subject "$> {{ git log --oneline -1 }};"`);
   console.log();
 
   console.log(chalk.bold('Non-configurable Options:'));

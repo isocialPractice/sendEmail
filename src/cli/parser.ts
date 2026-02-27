@@ -33,7 +33,8 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('-h, --help [section]', 'Display help documentation; optionally specify a section [null:productive]')
     .option('-f, --force', 'Skip the confirmation prompt before sending [null]')
     .option('--test [unitTest]', 'Run all tests or a specific unit test [null:reproductive]')
-    .option('-t, --text <address> [message]', 'Quick raw text email [raw]');
+    .option('-t, --text <address> [message]', 'Quick raw text email [raw]')
+    .option('--command-format', 'Activate terminal mode for argument values (must be first option) [terminal]');
 
   // ── Configurable Options ──────────────────────────────────────────────────
 
@@ -118,6 +119,10 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     globalConfig: opts['globalConfig'] as string[] | undefined,
     globalConfigRoot: opts['globalConfigRoot'] as string[] | undefined,
     globalConfigPath: opts['globalConfigPath'] as string[] | undefined,
+    // --command-format: true = first (active), false = passed but not first (error), undefined = not passed
+    commandFormat: opts['commandFormat'] !== undefined
+      ? (isCommandFormatFirst(argv) ? true : false)
+      : undefined,
   };
 
   // Handle -t / --text (next two positional args after -t)
@@ -183,4 +188,22 @@ function normalizeArgv(argv: string[]): string[] {
     if (arg === '-c:tool' || arg === '--copy:tool') return '--copy-tool';
     return arg;
   });
+}
+
+/**
+ * Detect whether --command-format is the first CLI option in the argument list.
+ * Terminal mode is ONLY activated when --command-format is the very first flag.
+ * If passed in any other position, a TerminalModeError is thrown and the process exits.
+ *
+ * @param argv - process.argv (includes node path and script path at [0] and [1])
+ */
+export function isCommandFormatFirst(argv: string[]): boolean {
+  // Scan from index 2 (after node and script path) for the first flag-like argument
+  for (let i = 2; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('-')) {
+      return arg === '--command-format';
+    }
+  }
+  return false;
 }

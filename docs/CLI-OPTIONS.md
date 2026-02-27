@@ -2,6 +2,8 @@
 
 Complete documentation for all `sendEmail` command-line options.
 
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?cli-options)
+
 ---
 
 ## Terminology
@@ -195,6 +197,60 @@ sendEmail --text john@example.com "Meeting at 3pm"
 
 - Uses the default account from `config/accounts/_default.js`
 - Message is sent as plain text
+
+---
+
+### `--command-format`
+
+**Type:** `terminal`
+
+Activate **Terminal Mode** — argument values may contain `$>command: {{ <cmd> }};` blocks whose output is evaluated and substituted before sending.
+
+**Must be the first option.** If passed in any other position, `sendEmail` throws an error and terminates — no email is sent.
+
+```bash
+# Correct — --command-format is first
+sendEmail --command-format \
+  --send-to dev@example.com \
+  --subject "$> {{ git log --oneline -1 }};" \
+  --message-text "$>command: {{ git log -1 --pretty=%B }};"
+```
+
+#### Terminal Mode Syntax
+
+```
+$>command: {{ <full command> }};    # primary form
+$> command: {{ <full command> }};   # primary with leading space (equivalent)
+$>command {{ <full command> }};     # secondary form (no colon)
+$> {{ <full command> }};            # shorthand form (single command)
+```
+
+**Syntax rules:**
+
+| Rule | Detail |
+|------|--------|
+| `$>` prefix | Every block must start with `$>` |
+| `command:` keyword | Optional whitespace between `$>` and `command:` is allowed — `$>command:` and `$> command:` are equivalent |
+| Space inside `{{ }}` | At least one space after `{{` and before `}}` is required (always enforced) |
+| Multiple spaces inside `{{ }}` OK | `{{  git log  }}` is acceptable |
+| Semicolon after `}}` | The closing `}};` is mandatory |
+| Multiple blocks | Multiple `$>command: {{ ... }};` blocks in one argument are allowed and concatenated |
+
+Raw argument values (no `$>` syntax) are passed through unchanged. Terminal Mode does **not** disable raw data usage. Can only be used as arguments — not in email template config files (`email.json` / `.htm` / `.html`).
+
+#### Prohibited Commands
+
+The following are prohibited and will throw a `TerminalModeError`:
+
+- Commands that delete files: `rm`, `del`, `rmdir`, `rd`, `unlink`, `shred`, `trash`, `erase`
+- Commands that redirect output to files: `> file` or `>> file`
+- Pipes to shell interpreters: `| bash`, `| sh`, `| cmd`, `| powershell`, etc.
+- Commands with no output: `cd`, `export`, `source`, `set`, `exit`
+- Privilege escalation: `sudo`, `su`
+- Destructive commands: `dd ... of=`, `mkfs`, `format <drive>:`
+- Network fetch-and-execute: `curl ... | bash`, `wget ... | python`, etc.
+
+> See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for the full reference.
 
 ---
 
