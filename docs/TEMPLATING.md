@@ -1,5 +1,7 @@
 # sendEmail Templating Reference
 
+<!-- {% raw %} -->
+
 Template features for email HTML and text content: variable substitution, global template tags, and how to wire them to reusable global configs.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?templating)
@@ -377,3 +379,5 @@ Each configuration file in `config/` is classified by a `ConfigItemType`. Types 
 - [API.md](API.md) — Engine API reference, including `resolveGlobalFolder()` and `loadGlobalForInline()`
 - [EXAMPLES.md](EXAMPLES.md) — Real-world examples using global templates
 - [CLI-OPTIONS.md](CLI-OPTIONS.md) — `--global-config` and related CLI options
+
+<!-- {% endraw %} -->

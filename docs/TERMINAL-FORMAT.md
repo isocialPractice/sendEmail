@@ -1,5 +1,7 @@
 # sendEmail Terminal Format Mode
 
+<!-- {% raw %} -->
+
 Documentation for the `--command-format` option and Terminal Mode syntax.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?terminal-format)
@@ -323,3 +325,5 @@ sendEmail --command-format \
 ```
 
 The `$> {{ ... }};` block is resolved first (by Terminal Mode), then `{{dates.month}}` and `{{dates.year}}` are substituted by the template engine when the email is built.
+
+<!-- {% endraw %} -->

@@ -1,5 +1,7 @@
 # sendEmail Type Reference
 
+<!-- {% raw %} -->
+
 Comprehensive documentation for all type systems used in the `sendEmail` project.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?types)
@@ -396,3 +398,5 @@ Terminal Mode Error: <message>
 ```
 
 > See [TERMINAL-FORMAT.md](TERMINAL-FORMAT.md) for error message examples and the complete prohibited-command list.
+
+<!-- {% endraw %} -->

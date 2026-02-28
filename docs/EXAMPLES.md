@@ -1,5 +1,7 @@
 # sendEmail Usage Examples
 
+<!-- {% raw %} -->
+
 Real-world examples for the `sendEmail` command-line tool.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?examples)
@@ -609,3 +611,5 @@ export const account = {
   },
 };
 ```
+
+<!-- {% endraw %} -->
