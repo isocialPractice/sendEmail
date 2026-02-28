@@ -4,7 +4,7 @@
 
 Real-world examples for the `sendEmail` command-line tool.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?examples)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?examples)
 
 ---
 

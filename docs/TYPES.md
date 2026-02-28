@@ -4,7 +4,7 @@
 
 Comprehensive documentation for all type systems used in the `sendEmail` project.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?types)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?types)
 
 ---
 

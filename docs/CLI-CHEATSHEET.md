@@ -2,7 +2,7 @@
 
 Quick reference for the `sendEmail` command-line tool.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?cli-cheatsheet)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?cli-cheatsheet)
 
 ---
 

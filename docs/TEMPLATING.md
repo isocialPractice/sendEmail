@@ -4,7 +4,7 @@
 
 Template features for email HTML and text content: variable substitution, global template tags, and how to wire them to reusable global configs.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?templating)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?templating)
 
 ---
 

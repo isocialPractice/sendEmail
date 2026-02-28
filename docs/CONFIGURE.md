@@ -4,7 +4,7 @@
 
 How to configure email templates in `config/emails/` and reusable global elements in `config/globals/`.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?configure)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?configure)
 
 ---
 

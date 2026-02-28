@@ -4,7 +4,7 @@
 
 Documentation for the `--command-format` option and Terminal Mode syntax.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?terminal-format)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?terminal-format)
 
 ---
 

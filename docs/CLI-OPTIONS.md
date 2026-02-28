@@ -2,7 +2,7 @@
 
 Complete documentation for all `sendEmail` command-line options.
 
-`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?cli-options)
+`Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?cli-options)
 
 ---
 
