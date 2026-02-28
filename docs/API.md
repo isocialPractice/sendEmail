@@ -167,7 +167,13 @@ console.log(assetBasePath); // root to resolve attachment paths from
 
 Build a complete, ready-to-send email message from configuration and template variables.
 
-**Global tag processing**: if the loaded HTML or text content contains `{% global 'name' %}` tags, `buildMessage()` automatically resolves each referenced global, substitutes the tag with the global's data file content, and merges the global's attachments. See [TEMPLATING.md](TEMPLATING.md) for full details.
+**Global tag processing**: if the loaded HTML or text content contains:
+
+```html
+{% global 'name' %}
+```` 
+
+tags, `buildMessage()` automatically resolves each referenced global, substitutes the tag with the global's data file content, and merges the global's attachments. See [TEMPLATING.md](TEMPLATING.md) for full details.
 
 ```typescript
 const message = await engine.buildMessage(
