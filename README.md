@@ -1,4 +1,4 @@
-# sendEmail
+# sendEmail ![icon](icon.png)
 
 Command-line tool to send an email, or automate repetitive emails.
 
@@ -286,7 +286,9 @@ Reusable HTML/text snippets and attachments, stored in `config/globals/<name>/`.
 Embed a global template inside any email HTML or text file:
 
 ```html
+{% raw %}
 {% global 'footer' %}
+{% endraw %}
 ```
 
 When `buildMessage()` processes the template, the tag is replaced with the global's HTML (or text) content, and the global's attachments (from `global.js`) are automatically merged into the email.
@@ -308,7 +310,9 @@ config/globals/
 Reference a nested global:
 
 ```html
+{% raw %}
 {% global 'footer/billing' %}
+{% endraw %}
 ```
 
 ### Global Folder Structure
