@@ -169,11 +169,11 @@ Build a complete, ready-to-send email message from configuration and template va
 
 **Global tag processing**: if the loaded HTML or text content contains:
 
+<!-- {% raw %} -->
 ```html
-{% raw %}
 {% global 'name' %}
-{% endraw %}
-```` 
+```
+<!-- {% endraw %} -->
 
 tags, `buildMessage()` automatically resolves each referenced global, substitutes the tag with the global's data file content, and merges the global's attachments. See [TEMPLATING.md](TEMPLATING.md) for full details.
 
