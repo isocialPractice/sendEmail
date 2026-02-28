@@ -1,5 +1,7 @@
 # sendEmail Configuration Reference
 
+<!-- {% raw %} -->
+
 How to configure email templates in `config/emails/` and reusable global elements in `config/globals/`.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.htm?configure)
@@ -243,15 +245,7 @@ Both resolve to `config/emails/<name>/email.js` → `export const emailAttachmen
 
 ### `globals` — Including Global Templates
 
-List global folder names to include. Their attachments are merged into the email, and their HTML/text content replaces any matching:
-
-```html
-{% raw %}
-{% global 'name' %}
-{% endraw %}
-``` 
-
-tags in your template files.
+List global folder names to include. Their attachments are merged into the email, and their HTML/text content replaces any matching `{% global 'name' %}` tags in your template files.
 
 ```json
 {
@@ -524,14 +518,12 @@ Use `{{variable}}` for dynamic substitution:
 
 Embed a reusable global block with the `{% global %}` tag:
 
-<!-- {% raw %} -->
 ```html
 <h1>Your Invoice</h1>
 <p>Dear {{contact.name}}, please find your invoice attached.</p>
 
 {% global 'footer' %}
 ```
-<!-- {% endraw %} -->
 
 The tag is replaced at send time with the global's HTML content, and the global's attachments are automatically merged.
 
@@ -1012,3 +1004,5 @@ Or in `email.json`:
 - [CLI-OPTIONS.md](CLI-OPTIONS.md) — `--config-email`, `--email-list`, `--global-config`, and all configurable options
 - [EXAMPLES.md](EXAMPLES.md) — Real-world usage examples including bulk send and inline globals
 - [API.md](API.md) — Engine API for library usage
+
+<!-- {% endraw %} -->
