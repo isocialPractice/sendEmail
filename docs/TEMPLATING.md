@@ -2,7 +2,7 @@
 
 <!-- {% raw %} -->
 
-Template features for email HTML and text content: variable substitution, global template tags, and how to wire them to reusable global configs.
+Template features for email HTML and text content: variable substitution, global template tags, and how to wire them to reusable global configs. Template variables are also supported in attachment filenames and paths.
 
 `Ctrl + click` to view [docs](https://isocialpractice.github.io/sendEmail/index.html?templating)
 
@@ -10,7 +10,7 @@ Template features for email HTML and text content: variable substitution, global
 
 ## Template Variables
 
-Use `{{variable}}` syntax in subject lines, HTML templates, and text files to substitute dynamic values at send time.
+Use `{{variable}}` syntax in subject lines, HTML templates, text files, and attachment properties to substitute dynamic values at send time.
 
 ### Built-in Variables
 
@@ -91,6 +91,41 @@ Result: `"January - Revenue Summary"` (when sent in February)
   "subject": "{{dates.lastYear}} Annual Review"
 }
 ```
+
+#### Using dates.* in Attachment Filenames and Paths
+
+Template variables can be used in attachment filenames and paths defined in `email.js`:
+
+```javascript
+export const emailAttachments = [
+  {
+    filename: 'Monthly Report - {{dates.lastMonth}} {{dates.year}}.pdf',
+    path: 'attachments/reports/{{dates.year}}/{{dates.month}}-report.pdf',
+  },
+  {
+    filename: 'Q{{dates.quarter}} Summary - {{dates.year}}.pdf',
+    path: 'attachments/quarterly/Q{{dates.quarter}}-{{dates.year}}.pdf',
+  },
+];
+```
+
+For complex date logic (e.g., conditional year calculation), use a function export:
+
+```javascript
+export const emailAttachments = (dates) => {
+  // Use previous year for January reports
+  const theYear = dates.lastMonth === "January" ? dates.lastYear : dates.year;
+
+  return [
+    {
+      filename: `Report - ${dates.lastMonth} ${theYear}.pdf`,
+      path: `reports/${theYear}/${dates.lastMonth}/report.pdf`,
+    },
+  ];
+};
+```
+
+See [CONFIGURE.md](CONFIGURE.md#dynamic-attachments-with-date-variables) for complete attachment templating documentation.
 
 ### Legacy Placeholders
 

@@ -8,7 +8,7 @@ import path from 'path';
 import { existsSync } from 'fs';
 import { exists } from '../utils/file-utils.js';
 import { warn, debug } from '../utils/logger.js';
-import type { Attachment, CLIAttachment, EngineConfig } from './types.js';
+import type { Attachment, CLIAttachment, EngineConfig, TemplateVariables } from './types.js';
 
 export class AttachmentLoader {
   constructor(private config: EngineConfig) {}
@@ -62,6 +62,41 @@ export class AttachmentLoader {
    */
   merge(emailAttachments: Attachment[], globalAttachments: Attachment[]): Attachment[] {
     return [...emailAttachments, ...globalAttachments];
+  }
+
+  /**
+   * Apply template variable substitution to attachment filenames and paths.
+   * Supports {{variable}} syntax in filename and path properties.
+   * 
+   * @param attachments - Array of attachments to process
+   * @param variables - Template variables (including dates.*)
+   * @returns Array of attachments with substituted values
+   * 
+   * @example
+   * const attachments = [{
+   *   filename: 'Report-{{dates.lastMonth}}-{{dates.year}}.pdf',
+   *   path: 'reports/{{dates.year}}/report.pdf'
+   * }];
+   * const result = loader.substituteTemplateVars(attachments, { 'dates.lastMonth': 'January', 'dates.year': '2026' });
+   * // result[0].filename → 'Report-January-2026.pdf'
+   * // result[0].path → 'reports/2026/report.pdf'
+   */
+  substituteTemplateVars(attachments: Attachment[], variables: TemplateVariables): Attachment[] {
+    const templateRegex = /\{\{([^}]+)\}\}/g;
+    
+    const substitute = (str: string): string => {
+      return str.replace(templateRegex, (match, key: string) => {
+        const trimmed = key.trim();
+        const value = variables[trimmed];
+        return value !== undefined ? String(value) : match;
+      });
+    };
+
+    return attachments.map(att => ({
+      ...att,
+      filename: att.filename ? substitute(att.filename) : att.filename,
+      path: substitute(att.path),
+    }));
   }
 
   /**

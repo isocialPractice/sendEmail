@@ -281,7 +281,10 @@ export class EmailEngine {
       ...(html && { html }),
       ...(text && { text }),
       ...(attachments.length > 0 && {
-        attachments: this.attachmentLoader.resolveAttachments(attachments),
+        attachments: this.attachmentLoader.resolveAttachments(
+          // Apply template substitution to attachment filenames and paths
+          this.attachmentLoader.substituteTemplateVars(attachments, templateVars)
+        ),
       }),
     };
 

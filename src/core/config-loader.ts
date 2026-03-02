@@ -8,6 +8,7 @@ import path from 'path';
 import { readFile, exists, listDirs } from '../utils/file-utils.js';
 import { ConfigurationError } from '../utils/error-handler.js';
 import { debug, warn } from '../utils/logger.js';
+import { buildDatesVars } from '../utils/dates-helper.js';
 import type {
   AccountConfig,
   EmailConfig,
@@ -113,6 +114,10 @@ export class ConfigLoader {
   /**
    * Load email attachments from config/emails/<emailName>/email.js
    * Returns empty array if the file doesn't exist.
+   * 
+   * Supports two patterns:
+   * 1. Static array: export const emailAttachments = [...]
+   * 2. Function with dates context: export const emailAttachments = (dates) => [...]
    */
   async loadEmailAttachments(emailName: string): Promise<Attachment[]> {
     const attachPath = path.resolve(
@@ -131,7 +136,29 @@ export class ConfigLoader {
     try {
       const fileUrl = 'file://' + attachPath.replace(/\\/g, '/');
       const module = await import(fileUrl) as Record<string, unknown>;
-      return (module.emailAttachments as Attachment[]) ?? [];
+      
+      const exported = module.emailAttachments;
+      if (!exported) return [];
+
+      // Build dates context for dynamic attachment paths
+      const datesVars = buildDatesVars();
+      
+      // Create dates object with clean property names (without 'dates.' prefix)
+      const dates: Record<string, string | number> = {};
+      Object.entries(datesVars).forEach(([key, value]) => {
+        if (key.startsWith('dates.')) {
+          const cleanKey = key.substring(6); // Remove 'dates.' prefix
+          dates[cleanKey] = value as string | number;
+        }
+      });
+
+      // Support function-based exports for dynamic attachments
+      if (typeof exported === 'function') {
+        return (exported as (dates: Record<string, string | number>) => Attachment[])(dates);
+      }
+      
+      // Static array export (backward compatible)
+      return (exported as Attachment[]) ?? [];
     } catch (err) {
       const error = err as Error;
       throw new ConfigurationError(
@@ -145,6 +172,10 @@ export class ConfigLoader {
    * Load global attachments from config/globals/<globalName>/global.js
    * Supports nested paths, e.g. 'footer/billing' resolves to
    * config/globals/footer/billing/global.js.
+   * 
+   * Supports two patterns:
+   * 1. Static array: export const globalAttachments = [...]
+   * 2. Function with dates context: export const globalAttachments = (dates) => [...]
    */
   async loadGlobalAttachments(globalName: string): Promise<Attachment[]> {
     // Build the folder path from potentially nested name ('footer/billing' → footer/billing/)
@@ -163,7 +194,29 @@ export class ConfigLoader {
     try {
       const fileUrl = 'file://' + globalPath.replace(/\\/g, '/');
       const module = await import(fileUrl) as Record<string, unknown>;
-      return (module.globalAttachments as Attachment[]) ?? [];
+      
+      const exported = module.globalAttachments;
+      if (!exported) return [];
+
+      // Build dates context for dynamic attachment paths
+      const datesVars = buildDatesVars();
+      
+      // Create dates object with clean property names (without 'dates.' prefix)
+      const dates: Record<string, string | number> = {};
+      Object.entries(datesVars).forEach(([key, value]) => {
+        if (key.startsWith('dates.')) {
+          const cleanKey = key.substring(6); // Remove 'dates.' prefix
+          dates[cleanKey] = value as string | number;
+        }
+      });
+
+      // Support function-based exports for dynamic attachments
+      if (typeof exported === 'function') {
+        return (exported as (dates: Record<string, string | number>) => Attachment[])(dates);
+      }
+      
+      // Static array export (backward compatible)
+      return (exported as Attachment[]) ?? [];
     } catch (err) {
       const error = err as Error;
       throw new ConfigurationError(

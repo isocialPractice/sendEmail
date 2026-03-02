@@ -459,6 +459,111 @@ export const emailAttachments = [
 ];
 ```
 
+---
+
+### Dynamic Attachments with Date Variables
+
+Starting with sendEmail v1.x, you can use date-based dynamic filenames and paths in attachments. This is useful for monthly/quarterly reports, dated invoices, or any attachment that includes date information in its filename or path.
+
+There are **two approaches** to using dates in attachments:
+
+#### Approach 1: Template Variables (Simple Substitution)
+
+Use `{{dates.*}}` template syntax directly in `filename` and `path` strings. The engine will substitute these at runtime automatically.
+
+```javascript
+export const emailAttachments = [
+  {
+    // Template variables are substituted at runtime
+    filename: 'Monthly Report - {{dates.lastMonth}} {{dates.year}}.pdf',
+    path: 'attachments/reports/{{dates.year}}/{{dates.month}}/report.pdf',
+  },
+  {
+    filename: 'Q{{dates.quarter}} Summary - {{dates.year}}.pdf',
+    path: 'attachments/quarterly/Q{{dates.quarter}}-{{dates.year}}.pdf',
+  },
+];
+```
+
+**When to use**: Simple date substitution without conditional logic.
+
+#### Approach 2: Function Export (Complex Logic)
+
+Export a function instead of a static array. The function receives a `dates` object with all date properties and can perform calculations or conditional logic.
+
+```javascript
+export const emailAttachments = (dates) => {
+  // Calculate which year to use based on the report month
+  // For January reports, use the previous year
+  const theYear = dates.lastMonth === "January" ? dates.lastYear : dates.year;
+
+  return [
+    {
+      filename: `Report - ${dates.lastMonth} ${theYear}.pdf`,
+      path: `reports/${theYear}/${dates.lastMonth}/report.pdf`,
+    },
+    {
+      filename: `Quarterly Summary Q${dates.quarter} ${dates.year}.pdf`,
+      path: `reports/quarterly/Q${dates.quarter}-${dates.year}.pdf`,
+    },
+  ];
+};
+```
+
+**When to use**: Conditional logic, calculations, or complex date-based naming.
+
+#### Available Date Properties
+
+The `dates` object (for function exports) and `{{dates.*}}` template variables (for template substitution) provide access to:
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `dates.lastMonth` | Previous month name | `"January"` |
+| `dates.month` | Current month name | `"February"` |
+| `dates.year` | Current year | `"2026"` |
+| `dates.lastYear` | Previous year | `"2025"` |
+| `dates.quarter` | Current quarter (1-4) | `1` |
+| `dates.lastQuarter` | Previous quarter (1-4) | `4` |
+| `dates.day` | Day of month | `"15"` |
+| `dates.monthNumber` | Month number | `"02"` |
+| `dates.fullDate` | MM-DD-YYYY format | `"02-15-2026"` |
+| `dates.isoDate` | ISO date YYYY-MM-DD | `"2026-02-15"` |
+
+See [TEMPLATING.md](TEMPLATING.md#date-format-variables-dates) for the complete list.
+
+#### Real-World Example
+
+A billing system that generates monthly reports where January's report uses the previous year:
+
+```javascript
+export const emailAttachments = (dates) => {
+  const theYear = dates.lastMonth === "January" ? dates.lastYear : dates.year;
+  
+  return [
+    {
+      filename: `Daily Inventory Report - ${dates.lastMonth} ${theYear}.pdf`,
+      path: `../../Documents/Reports/${theYear}/Daily Inventory Report - ${dates.lastMonth} ${theYear}.pdf`,
+    },
+    {
+      filename: 'Company Logo.jpg',
+      path: 'img/logo.jpg',
+      contentDisposition: 'inline',
+      cid: 'logo@company.com',
+    },
+  ];
+};
+```
+
+#### Choosing an Approach
+
+| Scenario | Use |
+|----------|-----|
+| Simple date substitution | Template variables (`{{dates.*}}`) |
+| Conditional logic based on dates | Function export with `dates` parameter |
+| Static attachments (no dates) | Static array export (original) |
+
+---
+
 ### Attachments Without `email.js` (CLI raw data)
 
 When you need to send attachments without creating an `email.js` file, use the CLI attachment flags directly. Pass `--attach-file` and `--attach-path` in matching order:

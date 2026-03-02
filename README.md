@@ -233,7 +233,7 @@ export const account = {
 
 ## Template Variables
 
-Use in subject lines, HTML templates, and configurable text:
+Use in subject lines, HTML templates, configurable text, and attachment filenames/paths:
 
 | Variable | Value |
 | -------- | ----- |
@@ -270,6 +270,29 @@ Extended date formatting powered by [`@jhauga/getdate`](https://github.com/jhaug
 ```
 
 Result: `"January 2026 - Revenue Summary"` (when sent in February)
+
+**Example — dynamic attachment filenames:**
+
+```javascript
+export const emailAttachments = [
+  {
+    filename: 'Report - {{dates.lastMonth}} {{dates.year}}.pdf',
+    path: 'attachments/{{dates.year}}/report.pdf',
+  },
+];
+```
+
+For complex date logic, use function exports in `email.js`:
+
+```javascript
+export const emailAttachments = (dates) => {
+  const theYear = dates.lastMonth === "January" ? dates.lastYear : dates.year;
+  return [{
+    filename: `Report - ${dates.lastMonth} ${theYear}.pdf`,
+    path: `reports/${theYear}/report.pdf`,
+  }];
+};
+```
 
 See [TEMPLATING.md](docs/TEMPLATING.md) for full variable reference.
 
