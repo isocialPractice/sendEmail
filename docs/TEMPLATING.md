@@ -176,6 +176,93 @@ Add any extra fields to your email list and reference them with `{{contact.<fiel
 
 ---
 
+## Custom Variables from email.js
+
+Variables defined in `email.js` can be used as template variables in the sibling `email.json` file. This allows you to compute dynamic values (such as conditional logic) and use them throughout your email configuration.
+
+### Exporting Custom Variables
+
+In `config/emails/<name>/email.js`, export an `emailVars` object:
+
+```javascript
+export const emailVars = {
+  reportType: 'Monthly',
+  fiscalYear: '2026',
+  customField: 'value'
+};
+```
+
+### Using Custom Variables in email.json
+
+Reference exported variables using `{{variableName}}` syntax in your email configuration:
+
+```json
+{
+  "subject": "{{reportType}} Report for Fiscal Year {{fiscalYear}}",
+  "to": "reports@example.com"
+}
+```
+
+### Conditional Logic Example
+
+Compute variables based on conditions (e.g., use previous year for January reports):
+
+```javascript
+// config/emails/billing/email.js
+
+// Compute the appropriate year based on current month
+var theYear;
+var date = new Date();
+var monthCheck = date.getMonth();
+if (monthCheck === 0) {
+  // January: use previous year for last month's report
+  theYear = '{{dates.lastYear}}';
+} else {
+  theYear = '{{dates.year}}';
+}
+
+export const emailAttachments = [
+  {
+    filename: 'Report - {{dates.lastMonth}} ' + theYear + '.pdf',
+    path: 'reports/' + theYear + '/{{dates.lastMonth}}-inventory.pdf',
+  }
+];
+
+// Export for use in email.json
+export const emailVars = {
+  theYear,
+  reportType: 'Monthly'
+};
+```
+
+```json
+// config/emails/billing/email.json
+{
+  "subject": "Report {{dates.lastMonth}} {{theYear}}",
+  "to": "billing@example.com",
+  "attachments": "{email.emailAttachments}"
+}
+```
+
+### Variable Resolution Order
+
+When `email.json` is loaded:
+
+1. Custom variables are loaded from `email.js` (if it exists and exports `emailVars`)
+2. Built-in `dates.*` variables are generated
+3. All variables are merged into the template context
+4. Template substitution is applied to the JSON content
+5. The substituted JSON is parsed
+
+### Notes
+
+- Custom variables can contain template syntax themselves (e.g., `theYear = '{{dates.lastYear}}'`)
+- Template substitution happens once: custom variables and built-in variables are substituted together
+- If a custom variable has the same name as a built-in variable, the custom variable takes precedence
+- Custom variables are only available in the sibling `email.json` file, not in HTML templates or other email configs
+
+---
+
 ## Global Template Tags
 
 Embed a reusable global template inside an email HTML or text file using the `{% global %}` tag.

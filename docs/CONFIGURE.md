@@ -29,7 +29,7 @@ Each named email template is a folder under `config/emails/`. The folder name is
 config/emails/
   billing/
     email.json          ← required: email properties and metadata
-    email.js            ← required: attachment array
+    email.js            ← required: attachments array; optional: custom variables
     html/
       billingStatement.htm    ← HTML body file(s)
     data/
@@ -41,7 +41,7 @@ config/emails/
 | File | Required | Purpose |
 |------|----------|---------|
 | `email.json` | Yes | Email properties: to, from, subject, html, attachments, globals, etc. |
-| `email.js` | Yes | Exports `emailAttachments` array — attachment definitions |
+| `email.js` | Yes | Exports `emailAttachments` array (attachments) and optionally `emailVars` object (custom template variables for email.json) |
 | `html/<file>` | No | HTML body file(s). Any filename accepted in the `html/` subfolder |
 | `data/<file>` | No | Plain-text body file(s). Any filename accepted in the `data/` subfolder |
 
@@ -367,7 +367,7 @@ Request delivery status feedback from the receiving server:
 
 ## Configuring `email.js`
 
-`email.js` lives alongside `email.json` and exports the `emailAttachments` array. This is where all attachment definitions live — regular file attachments and inline images.
+`email.js` lives alongside `email.json` and exports the `emailAttachments` array (required) and optionally an `emailVars` object for custom template variables. This is where all attachment definitions live — regular file attachments and inline images — and where you can define custom variables for use in `email.json`.
 
 ### Basic Structure
 
@@ -541,8 +541,8 @@ export const emailAttachments = (dates) => {
   
   return [
     {
-      filename: `Daily Inventory Report - ${dates.lastMonth} ${theYear}.pdf`,
-      path: `../../Documents/Reports/${theYear}/Daily Inventory Report - ${dates.lastMonth} ${theYear}.pdf`,
+      filename: `Report - ${dates.lastMonth} ${theYear}.pdf`,
+      path: `../../Documents/Reports/${theYear}/Report - ${dates.lastMonth} ${theYear}.pdf`,
     },
     {
       filename: 'Company Logo.jpg',
@@ -561,6 +561,72 @@ export const emailAttachments = (dates) => {
 | Simple date substitution | Template variables (`{{dates.*}}`) |
 | Conditional logic based on dates | Function export with `dates` parameter |
 | Static attachments (no dates) | Static array export (original) |
+
+---
+
+### Exporting Custom Variables for email.json
+
+In addition to `emailAttachments`, you can export custom variables from `email.js` that can be used as template variables in the sibling `email.json` file. This enables dynamic configuration values based on conditional logic.
+
+#### Exporting `emailVars`
+
+Export an `emailVars` object containing custom variables:
+
+```javascript
+// Compute a conditional year based on current month
+var theYear;
+var date = new Date();
+var monthCheck = date.getMonth();
+if (monthCheck === 0) {
+  // January: use previous year for last month's report
+  theYear = '{{dates.lastYear}}';
+} else {
+  theYear = '{{dates.year}}';
+}
+
+export const emailAttachments = [
+  {
+    filename: 'Report - {{dates.lastMonth}} ' + theYear + '.pdf',
+    path: '../../Documents/Reports/' + theYear + '/report.pdf',
+  }
+];
+
+// Export custom variables for use in email.json
+export const emailVars = {
+  theYear,
+  reportType: 'Monthly',
+  department: 'Billing'
+};
+```
+
+#### Using Custom Variables in email.json
+
+Reference exported variables using `{{variableName}}` syntax:
+
+```json
+{
+  "subject": "Report {{dates.lastMonth}} {{theYear}}",
+  "to": "reports@example.com",
+  "bcc": "{{department}}@example.com"
+}
+```
+
+The `email.json` file is processed with template substitution before being parsed. All custom variables from `emailVars` are merged with built-in variables like `dates.*`, making them available throughout the configuration.
+
+#### How It Works
+
+1. When loading an email configuration, the engine first checks for `email.js` and extracts the `emailVars` export
+2. Custom variables are merged with built-in `dates.*` variables into a template context
+3. The `email.json` file content is loaded as text
+4. Template substitution is applied to the JSON text using the merged variables
+5. The substituted JSON is parsed and used as the email configuration
+
+#### Notes
+
+- Custom variables can contain template syntax themselves (e.g., `theYear = '{{dates.lastYear}}'`)
+- All variables are substituted in a single pass
+- If a custom variable has the same name as a built-in variable, the custom variable takes precedence
+- Custom variables are only available in the sibling `email.json` file
 
 ---
 

@@ -13,5 +13,7 @@
     "return": "headers",
     "notify": ["success", "delay"],
     "recipient": "_default"
-  }
+  },
+  "_comment_custom_vars": "Example: Use custom variables from email.js",
+  "_example_subject_with_custom_vars": "{{reportType}} Report - {{dates.lastMonth}} {{theYear}}"
 }

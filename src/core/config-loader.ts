@@ -78,7 +78,51 @@ export class ConfigLoader {
   }
 
   /**
+   * Load custom variables from config/emails/<emailName>/email.js
+   * These variables can be used in the sibling email.json via template syntax.
+   * Returns empty object if the file doesn't exist or doesn't export emailVars.
+   */
+  async loadEmailVars(emailName: string): Promise<Record<string, string | number>> {
+    const emailJsPath = path.resolve(
+      this.config.emailsPath,
+      emailName,
+      'email.js'
+    );
+
+    if (!(await exists(emailJsPath))) {
+      debug(`No email.js found for '${emailName}', skipping custom variables`);
+      return {};
+    }
+
+    debug(`Loading email custom variables: ${emailJsPath}`);
+
+    try {
+      const fileUrl = 'file://' + emailJsPath.replace(/\\/g, '/');
+      const module = await import(fileUrl) as Record<string, unknown>;
+      
+      const exported = module.emailVars;
+      if (!exported || typeof exported !== 'object') {
+        debug(`No emailVars export found in ${emailJsPath}`);
+        return {};
+      }
+
+      return exported as Record<string, string | number>;
+    } catch (err) {
+      const error = err as Error;
+      warn(`Failed to load email custom variables from '${emailName}': ${error.message}`);
+      return {};
+    }
+  }
+
+  /**
    * Load email configuration from config/emails/<emailName>/email.json
+   * 
+   * Supports template variable substitution:
+   * - Built-in dates.* variables from buildDatesVars()
+   * - Custom variables from sibling email.js (export const emailVars = {...})
+   * 
+   * Template variables in email.json are substituted before JSON parsing,
+   * allowing dynamic configuration values.
    */
   async loadEmailConfig(emailName: string): Promise<EmailConfig> {
     const emailPath = path.resolve(
@@ -99,7 +143,29 @@ export class ConfigLoader {
     debug(`Loading email config: ${emailPath}`);
 
     try {
-      const content = await readFile(emailPath);
+      // Load custom variables from sibling email.js
+      const emailVars = await this.loadEmailVars(emailName);
+
+      // Build template variables context
+      const datesVars = buildDatesVars();
+      const templateVars: Record<string, string | number | boolean | undefined> = { ...datesVars };
+
+      // Add custom variables from email.js to template context
+      for (const [key, value] of Object.entries(emailVars)) {
+        templateVars[key] = value;
+      }
+
+      // Load JSON as text and apply template substitution
+      let content = await readFile(emailPath);
+      
+      // Substitute template variables {{variable}}
+      content = content.replace(/\{\{([^}]+)\}\}/g, (match, key: string) => {
+        const trimmed = key.trim();
+        const value = templateVars[trimmed];
+        return value !== undefined ? String(value) : match;
+      });
+
+      // Parse substituted JSON
       return JSON.parse(content) as EmailConfig;
     } catch (err) {
       const error = err as Error;

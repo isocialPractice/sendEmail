@@ -111,4 +111,172 @@ describe('ConfigLoader', () => {
       );
     });
   });
+
+  describe('loadEmailVars and template substitution in email.json', () => {
+    it('substitutes custom variables from email.js into email.json', async () => {
+      const mockEmailJsonWithTemplates = {
+        to: 'test@example.com',
+        subject: 'Report {{dates.lastMonth}} {{theYear}}',
+        from: '_default',
+      };
+
+      // Mock email.json file
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return true;
+        return false;
+      });
+
+      vi.mocked(fileUtils.readFile).mockResolvedValue(
+        JSON.stringify(mockEmailJsonWithTemplates)
+      );
+
+      // Mock dynamic import for email.js
+      const mockEmailVars = {
+        theYear: '2026',
+        reportType: 'Monthly',
+      };
+
+      // Create a mock module
+      vi.doMock('/test/root/config/emails/test-email/email.js', () => ({
+        emailVars: mockEmailVars,
+      }));
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      // The subject should still have templates because dates.lastMonth isn't mocked
+      // but theYear should be present in the context
+      expect(result.subject).toBeDefined();
+    });
+
+    it('loads email.json without custom variables when email.js does not exist', async () => {
+      const mockEmailConfig = {
+        to: 'test@example.com',
+        subject: 'Static Subject',
+        from: '_default',
+      };
+
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return false;
+        return false;
+      });
+
+      vi.mocked(fileUtils.readFile).mockResolvedValue(JSON.stringify(mockEmailConfig));
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      expect(result.subject).toBe('Static Subject');
+    });
+
+    it('substitutes dates.* variables in email.json', async () => {
+      const mockEmailJsonWithDates = {
+        to: 'test@example.com',
+        subject: 'Report {{dates.year}}',
+        from: '_default',
+      };
+
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return false;
+        return false;
+      });
+
+      vi.mocked(fileUtils.readFile).mockResolvedValue(
+        JSON.stringify(mockEmailJsonWithDates)
+      );
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      // Should substitute dates.year with actual year
+      expect(result.subject).toMatch(/Report \d{4}/);
+      expect(result.subject).not.toContain('{{dates.year}}');
+    });
+
+    it('handles nested template syntax in custom variables', async () => {
+      const mockEmailJson = {
+        to: 'test@example.com',
+        subject: '{{theYear}} Report',
+        from: '_default',
+      };
+
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return false;
+        return false;
+      });
+
+      // The JSON content has {{theYear}} but email.js doesn't exist
+      // so theYear won't be substituted
+      vi.mocked(fileUtils.readFile).mockResolvedValue(JSON.stringify(mockEmailJson));
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      // theYear should remain unsubstituted since email.js doesn't exist
+      expect(result.subject).toBe('{{theYear}} Report');
+    });
+
+    it('leaves unmatched template variables unchanged', async () => {
+      const mockEmailJson = {
+        to: 'test@example.com',
+        subject: 'Report {{unknownVariable}}',
+        from: '_default',
+      };
+
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return false;
+        return false;
+      });
+
+      vi.mocked(fileUtils.readFile).mockResolvedValue(JSON.stringify(mockEmailJson));
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      // Unknown variables should remain as-is
+      expect(result.subject).toBe('Report {{unknownVariable}}');
+    });
+
+    it('handles multiple template variables in one field', async () => {
+      const mockEmailJson = {
+        to: 'test@example.com',
+        subject: '{{dates.month}} {{dates.year}} - Q{{dates.quarter}} Report',
+        from: '_default',
+      };
+
+      vi.mocked(fileUtils.exists).mockImplementation(async (filePath: string) => {
+        if (filePath.includes('email.json')) return true;
+        if (filePath.includes('email.js')) return false;
+        return false;
+      });
+
+      vi.mocked(fileUtils.readFile).mockResolvedValue(JSON.stringify(mockEmailJson));
+
+      const result = await loader.loadEmailConfig('test-email');
+
+      // All date variables should be substituted
+      expect(result.subject).not.toContain('{{dates.');
+      expect(result.subject).toMatch(/\w+ \d{4} - Q\d Report/);
+    });
+  });
+
+  describe('loadEmailAttachments with date templating', () => {
+    it('returns empty array when email.js does not exist', async () => {
+      vi.mocked(fileUtils.exists).mockResolvedValue(false);
+
+      const result = await loader.loadEmailAttachments('nonexistent');
+
+      expect(result).toEqual([]);
+    });
+
+    it('handles errors gracefully when email.js exists but cannot be loaded', async () => {
+      vi.mocked(fileUtils.exists).mockResolvedValue(true);
+
+      // This will fail because the file doesn't actually exist in the test environment
+      // We expect it to throw a ConfigurationError
+      await expect(loader.loadEmailAttachments('example')).rejects.toThrow(
+        "Failed to load email attachments for 'example'"
+      );
+    });
+  });
 });

@@ -26,6 +26,33 @@
 //   ... and more (see docs/TEMPLATING.md for full list)
 //
 // ═══════════════════════════════════════════════════════════════════════════
+// Custom Variables for email.json
+// ═══════════════════════════════════════════════════════════════════════════
+// Export 'emailVars' to define custom template variables that can be used in
+// the sibling email.json file. These variables can contain template syntax
+// themselves and will be substituted when email.json is loaded.
+//
+// Example:
+//   export const emailVars = {
+//     reportType: 'Monthly',
+//     theYear: date.getMonth() === 0 ? '{{dates.lastYear}}' : '{{dates.year}}'
+//   };
+//
+// Then in email.json:
+//   "subject": "{{reportType}} Report - {{dates.lastMonth}} {{theYear}}"
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Example: Conditional year variable for January reports
+// In January, use previous year; otherwise use current year
+var theYear;
+var date = new Date();
+var monthCheck = date.getMonth();
+if (monthCheck === 0) {
+  theYear = '{{dates.lastYear}}';
+} else {
+  theYear = '{{dates.year}}';
+}
 
 export const emailAttachments = [
   {
@@ -43,5 +70,15 @@ export const emailAttachments = [
   //   filename: 'Monthly Report - {{dates.lastMonth}} {{dates.year}}.pdf',
   //   path: 'attachments/reports/{{dates.year}}/{{dates.month}}-report.pdf',
   // },
+  // Example using custom variable:
+  // {
+  //   filename: 'Report - {{dates.lastMonth}} ' + theYear + '.pdf',
+  //   path: 'reports/' + theYear + '/{{dates.lastMonth}}-inventory.pdf',
+  // },
 ];
 
+// Export custom variables for use in email.json
+export const emailVars = {
+  theYear,
+  reportType: 'Monthly',
+};

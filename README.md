@@ -294,6 +294,34 @@ export const emailAttachments = (dates) => {
 };
 ```
 
+### Custom Variables from email.js
+
+Define custom template variables in `email.js` that can be used in the sibling `email.json`:
+
+```javascript
+// config/emails/billing/email.js
+var theYear;
+var date = new Date();
+if (date.getMonth() === 0) {
+  theYear = '{{dates.lastYear}}';  // January: use previous year
+} else {
+  theYear = '{{dates.year}}';
+}
+
+export const emailVars = {
+  theYear,
+  reportType: 'Monthly'
+};
+```
+
+```json
+// config/emails/billing/email.json
+{
+  "subject": "{{reportType}} Report - {{dates.lastMonth}} {{theYear}}",
+  "to": "reports@example.com"
+}
+```
+
 See [TEMPLATING.md](docs/TEMPLATING.md) for full variable reference.
 
 Legacy placeholders (`CH-EMAILONLIST`, `CHANGE_SEND_TO`) are also supported.
