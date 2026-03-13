@@ -158,6 +158,20 @@ sendEmail -h arguments:non-configurable
 
 ---
 
+### `--confirm`
+
+**Type:** `null`
+
+Confirm before sending emails. This is the **default behavior** — sendEmail will always prompt for confirmation unless `--force` is used.
+
+```bash
+sendEmail --config-email newsletter --send-to user@example.com --confirm
+```
+
+This flag is typically redundant since confirmation is the default. It can be useful for explicitly documenting that confirmation is desired in scripts or configuration files.
+
+---
+
 ### `-f, --force`
 
 **Type:** `null`

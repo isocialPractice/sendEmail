@@ -124,6 +124,7 @@ sendEmail --command-format \
 | `--copy:config-no-account [path]` | `-c:config-no-account` | null:rep `<config:no-account>` | Copy config/support types only (no account setup, uses root account) |
 | `--copy:tool [path]` | `-c:tool` | null:rep `<tools>` | Explicit full tool copy |
 | `--help [section]` | `-h` | null:prod | Show help |
+| `--confirm` | | null | Confirm before sending (default) |
 | `--force` | `-f` | null | Skip confirmation |
 | `--test [name]` | | null:rep | Run tests |
 | `--text <addr> [msg]` | `-t` | raw | Quick text email |

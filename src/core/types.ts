@@ -149,6 +149,7 @@ export interface CLIOptions {
 
   // Mode Options
   text?: [string, string];       // -t, --text [address] [message] (raw mode)
+  confirm?: boolean;             // --confirm (confirm before sending, default behavior)
   force?: boolean;               // -f, --force (skip confirmation)
   copy?: string;                 // -c, --copy [path] (copy tool, default tools mode)
   copyConfig?: string;           // -c:config, --copy:config [path] (copy config + support types only)

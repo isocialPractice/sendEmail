@@ -23,6 +23,7 @@ const OPTIONS: OptionEntry[] = [
   { flag: '--config-email <name>', description: 'Use a configured email from config/emails/', type: 'normal | repetitive', configurable: false },
   { flag: '-c, --copy [path]', description: 'Copy sendEmail to path (or CWD if no path given). Switch params: -c:tool (full copy), -c:config (config + account setup), -c:config-no-account (config only, no account setup)', type: 'null:reproductive', configurable: false },
   { flag: '-h, --help [section]', description: 'Show help. Sections: options, options:configurable, options:non-configurable, options:tool, arguments, arguments:configurable, arguments:non-configurable', type: 'null:productive', configurable: false },
+  { flag: '--confirm', description: 'Confirm before sending (default behavior)', type: 'null', configurable: false },
   { flag: '-f, --force', description: 'Skip confirmation prompt before sending', type: 'null', configurable: false },
   { flag: '--test [unitTest]', description: 'Run all tests or a specific unit test by name', type: 'null:reproductive', configurable: false },
   { flag: '-t, --text <address> [message]', description: 'Quick text email: send a raw message directly to address', type: 'raw', configurable: false },

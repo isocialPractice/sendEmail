@@ -31,6 +31,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('--copy-config-no-account [path]', 'Copy only config/support types without account setup [null:reproductive <config:no-account>]')
     .option('--copy-tool [path]', 'Copy the full sendEmail tool to a path (or CWD if no path) [null:reproductive <tools>]')
     .option('-h, --help [section]', 'Display help documentation; optionally specify a section [null:productive]')
+    .option('--confirm', 'Confirm before sending (default behavior) [null]')
     .option('-f, --force', 'Skip the confirmation prompt before sending [null]')
     .option('--test [unitTest]', 'Run all tests or a specific unit test [null:reproductive]')
     .option('-t, --text <address> [message]', 'Quick raw text email [raw]')
@@ -109,6 +110,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     log: opts['log'] as boolean | undefined,
     newList: opts['newList'] as string | undefined,
     listToolPath: opts['listToolPath'] as string | undefined,
+    confirm: opts['confirm'] as boolean | undefined,
     force: opts['force'] as boolean | undefined,
     copy: opts['copy'] as string | undefined,
     copyConfig: opts['copyConfig'] as string | undefined,

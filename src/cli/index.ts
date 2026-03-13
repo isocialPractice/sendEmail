@@ -46,6 +46,21 @@ function findRootPath(): string {
 }
 
 /**
+ * Determine if confirmation should be skipped based on --confirm and --force flags.
+ * @param confirm - Value of --confirm flag (undefined = not passed, true = --confirm, false = --no-confirm)
+ * @param force - Value of --force flag (undefined = not passed, true = --force)
+ * @returns true if confirmation should be skipped, false if confirmation should be shown
+ */
+function shouldSkipConfirmation(confirm?: boolean, force?: boolean): boolean {
+  // --force explicitly skips confirmation
+  if (force === true) return true;
+  // --no-confirm explicitly skips confirmation
+  if (confirm === false) return true;
+  // Default: show confirmation (don't skip)
+  return false;
+}
+
+/**
  * Main CLI entry point.
  */
 export async function run(argv?: string[]): Promise<void> {
@@ -184,7 +199,7 @@ export async function run(argv?: string[]): Promise<void> {
       message.from = engine.getAccountEmail();
     }
 
-    const confirmed = await confirmSend(message as Parameters<typeof confirmSend>[0], opts.force);
+    const confirmed = await confirmSend(message as Parameters<typeof confirmSend>[0], shouldSkipConfirmation(opts.confirm, opts.force));
     if (!confirmed) {
       info('Send cancelled.');
       return;
@@ -298,7 +313,7 @@ export async function run(argv?: string[]): Promise<void> {
     const count = contacts.length;
     const listSource = effectiveListName ?? 'embedded';
 
-    const confirmed = await confirmSendAll(listSource, count, opts.force);
+    const confirmed = await confirmSendAll(listSource, count, shouldSkipConfirmation(opts.confirm, opts.force));
     if (!confirmed) {
       info('Send cancelled.');
       return;
@@ -360,7 +375,7 @@ export async function run(argv?: string[]): Promise<void> {
     const count = emailList['email-list'].length;
     const listSource = effectiveListName ?? 'embedded';
 
-    const confirmed = await confirmBulkSend(listSource, count, opts.force);
+    const confirmed = await confirmBulkSend(listSource, count, shouldSkipConfirmation(opts.confirm, opts.force));
     if (!confirmed) {
       info('Bulk send cancelled.');
       return;
@@ -406,7 +421,7 @@ export async function run(argv?: string[]): Promise<void> {
   // Build and preview message
   const message = await engine.buildMessage(emailConfig, vars, overrides);
 
-  const confirmed = await confirmSend(message, opts.force);
+  const confirmed = await confirmSend(message, shouldSkipConfirmation(opts.confirm, opts.force));
   if (!confirmed) {
     info('Send cancelled.');
     return;

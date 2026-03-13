@@ -1,6 +1,6 @@
 {
   "name": "send-email",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Command-line tool to send an email, or automate repetitive emails",
   "type": "module",
   "main": "./dist/core/engine.js",
