@@ -6,6 +6,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+
+### Added
+
+- **`--template <args...>` option**: Fill `_flag` directives declared in an
+  email config's `email.json` from the command line. Requires `--config-email`.
+
+  ```bash
+  sendEmail --config-email cmd-flag-example \
+    --send-to alice@example.com \
+    --template msg_1 "Welcome aboard" msg_2 "Let us know if you need anything"
+  ```
+
+  **`_flag` directive grammar (in `email.json`):**
+  - `"_flag"` — optional, empty string fallback
+  - `"_flag.required"` — must be supplied; throws `ConfigurationError` listing every missing key
+  - `"_flag.optional"` — property is removed when not supplied
+  - `"_flag.condition"` — declares the property as a condition input for a
+    `{% _flag.condition('<key>') %}` block in the body; the property itself is
+    stripped from the email config and only the `_flag.<key>` variable is exposed
+  - `"_flag:default-to=<value>"` — falls back to `<value>` when not supplied
+  - `"_flag:map-to=<otherKey>"` — also exposes the value under `_flag.<otherKey>`
+
+- **Conditional body blocks**: `{% _flag.condition('<key>') %} ... {% end %}`
+  in HTML/text bodies. Supports cases `- <prop>: undefined`, `- <prop>: {flagged}`
+  (with nested `- equal: "<literal>"` sub-cases), and `- else:`. Inline
+  `{% _flag 'name' %}` substitutes `_flag.<name>` inside chosen `message:` lines
+  (and anywhere else in the body).
+
+  Resolved values are exposed as template variables `_flag.<property>` so HTML
+  and text bodies can reference them with `{{ _flag.<property> }}` substitution.
+
+- **`config/emails/cmd-flag-example/`**: Worked example demonstrating every
+  `_flag` directive form.
+
+- **Documentation**:
+  - New `--template` section in [`docs/CLI-OPTIONS.md`](docs/CLI-OPTIONS.md)
+  - New "`_flag` Directives and `--template`" section in [`docs/TEMPLATING.md`](docs/TEMPLATING.md)
+  - Help entry registered in `-h options:configurable`
+
+- **Test coverage**:
+  - `tests/unit/flag-processor.test.ts` — 14 tests covering parsing, validation,
+    required/optional/default-to/map-to behavior, and CLI override fallback.
+  - `tests/unit/flag-condition.test.ts` — 11 tests covering condition-block
+    parsing, undefined / flagged / else / equal case matching, nested cases,
+    inline `{% _flag 'name' %}` substitution, and multi-block templates.
+
 ## [1.0.1]
 
 ### Added

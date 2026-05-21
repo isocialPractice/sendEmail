@@ -43,6 +43,12 @@ sendEmail --config-email billing --email-list clients --send-all --force
 sendEmail --config-email billing --email-list clients --log --force
 # Writes: logs/1.log, logs/2.log, ... (sequential)
 
+# Fill _flag directives in an email.json from the command line
+sendEmail --config-email cmd-flag-example \
+  --send-to alice@example.com \
+  --template msg_1 "Welcome!" msg_2 "Let us know if you need anything"
+# See docs/TEMPLATING.md — `_flag` Directives and `--template`
+
 # Send with attachment
 sendEmail --send-to john@example.com --subject "Report" \
   --message-html ./body.html \
@@ -180,7 +186,7 @@ sendEmail -h arguments:non-configurable # Non-configurable arguments only
 | Variable | Example Value |
 |----------|---------------|
 | `{{contact.name}}` | John Doe |
-| `{{contact.email}}` | john@example.com |
+| `{{contact.email}}` | `john@example.com` |
 | `{{contact.<field>}}` | Any custom list field |
 | `{{date}}` | 2026-02-19 |
 | `{{date.formatted}}` | February 19, 2026 |

@@ -22,6 +22,7 @@ import { writeLog, isLogEnabled } from '../utils/email-logger.js';
 import { SendMode } from '../core/types.js';
 import type { EmailConfig, Attachment, TemplateVariables, EmailContact, EmailList } from '../core/types.js';
 import { applyTerminalFormat, TerminalModeError } from './terminal-format.js';
+import { parseTemplatePairs, processFlagDirectives } from '../core/flag-processor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -249,6 +250,25 @@ export async function run(argv?: string[]): Promise<void> {
   // Build overrides from CLI options
   const overrides = buildOverrides(opts);
 
+  // ── Template Flag Resolution (--template) ─────────────────────────────────
+  // Resolve _flag directives declared in email.json against --template values
+  // and CLI overrides. Must run AFTER loadEmailConfig and AFTER buildOverrides
+  // so same-named CLI options (e.g. --send-to → "to") can satisfy required flags.
+  if (opts.template && !opts.configEmail) {
+    logError('--template requires --config-email <name>');
+    process.exit(1);
+  }
+  const templateMap = parseTemplatePairs(opts.template);
+  let flagVars: Record<string, string> = {};
+  if (opts.configEmail) {
+    const flagResult = processFlagDirectives(emailConfig, templateMap, overrides as Record<string, unknown>);
+    flagVars = flagResult.flagVars;
+  } else if (Object.keys(templateMap).length > 0) {
+    // Should be unreachable thanks to the guard above, but keep defensive.
+    logError('--template requires --config-email <name>');
+    process.exit(1);
+  }
+
   // Resolve --message-html against email config (when --config-email is used)
   if (opts.configEmail) {
     const resolvedHtml = await resolveMessageHtml(
@@ -325,7 +345,8 @@ export async function run(argv?: string[]): Promise<void> {
     // Build template variables without contact-specific vars
     const vars: TemplateVariables = templateEngine.buildSingleVars(
       allRecipients[0] ?? '',
-      opts.subject ?? emailConfig.subject
+      opts.subject ?? emailConfig.subject,
+      flagVars
     );
 
     // Build message with all recipients in "to"
@@ -393,7 +414,8 @@ export async function run(argv?: string[]): Promise<void> {
         } else {
           warn(`  Failed ${current}/${total}: ${sendResult.recipient} - ${sendResult.error?.message}`);
         }
-      }
+      },
+      flagVars
     );
 
     console.log();
@@ -416,7 +438,7 @@ export async function run(argv?: string[]): Promise<void> {
     ? (overrides.to ?? emailConfig.to as string[])[0] ?? ''
     : (overrides.to ?? emailConfig.to ?? '') as string;
 
-  const vars: TemplateVariables = templateEngine.buildSingleVars(to, opts.subject ?? emailConfig.subject);
+  const vars: TemplateVariables = templateEngine.buildSingleVars(to, opts.subject ?? emailConfig.subject, flagVars);
 
   // Build and preview message
   const message = await engine.buildMessage(emailConfig, vars, overrides);

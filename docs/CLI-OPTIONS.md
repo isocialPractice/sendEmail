@@ -572,6 +572,62 @@ sendEmail --send-to client@example.com --global-config:path fileName.js
 
 ---
 
+### `--template <args...>`
+
+**Type:** `mixed`
+
+Supply values for `_flag` directives declared in an email config's `email.json`.
+Requires `--config-email`. Arguments are key/value pairs:
+
+```bash
+sendEmail --config-email cmd-flag-example \
+  --send-to alice@example.com \
+  --template msg_1 "Welcome aboard" msg_2 "Let us know if you need anything"
+```
+
+**How it works**
+
+1. The chosen email's `email.json` is loaded.
+2. Every property whose value matches the `_flag` directive grammar (see below)
+   is resolved against the `--template` map, then against any matching CLI
+   override (e.g. `--send-to` for the `to` property), then against the
+   directive's own default. Required directives that cannot be resolved
+   produce a clear error listing all missing keys.
+3. Resolved values are also exposed as template variables named
+   `_flag.<property>` so that HTML/text bodies can reference them with
+   ordinary `{{ _flag.<property> }}` substitution.
+
+**`_flag` directive grammar (used in `email.json`)**
+
+| Directive | Behavior |
+|---|---|
+| `"_flag"` | Optional. Empty string when not provided. |
+| `"_flag.required"` | Must be supplied via `--template` or an equivalent CLI option; throws if missing. |
+| `"_flag.optional"` | Optional. Property is removed when no value is provided. |
+| `"_flag.condition"` | Pairs with a `{% _flag.condition('<key>') %}` block in the body. The property itself is stripped from the email config; only `_flag.<key>` is exposed for the condition block to evaluate. |
+| `"_flag:default-to=<value>"` | Optional. Falls back to `<value>` when not provided. |
+| `"_flag:map-to=<otherKey>"` | Also exposes the resolved value under `_flag.<otherKey>`. |
+
+Modifiers may be combined, e.g. `"_flag.optional:map-to=salutation"`.
+
+See [`config/emails/cmd-flag-example/`](../config/emails/cmd-flag-example) for a
+fully worked example, and [TEMPLATING.md](TEMPLATING.md#-flag-directives-and---template)
+for the full reference.
+
+**Error examples**
+
+```bash
+# Required directive not supplied
+sendEmail --config-email cmd-flag-example --send-to alice@example.com
+# → Missing required --template value(s): msg_1
+
+# Odd number of arguments
+sendEmail --config-email cmd-flag-example --template msg_1
+# → --template requires an even number of arguments
+```
+
+---
+
 ### `--email-list <listName>`
 
 **Type:** `repetitive`

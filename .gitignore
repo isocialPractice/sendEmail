@@ -43,3 +43,6 @@ config/*
 
 # log files
 logs/
+
+# local support assets
+img/*/

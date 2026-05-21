@@ -55,7 +55,8 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     .option('--attach-content-disp <value...>', 'Content disposition(s): inline|attachment [mixed]')
     .option('--global-config <args...>', 'Load a global config by name or path (default resolution) [mixed]')
     .option('--global-config-root <args...>', 'Load a global config from sendEmail root globals only [mixed]')
-    .option('--global-config-path <args...>', 'Load a global config from CWD path only [mixed]');
+    .option('--global-config-path <args...>', 'Load a global config from CWD path only [mixed]')
+    .option('--template <args...>', 'Key/value pairs that fill _flag directives in email.json (requires --config-email) [mixed]');
 
   // ── List Options ──────────────────────────────────────────────────────────
 
@@ -121,6 +122,7 @@ export function parseArguments(argv: string[] = process.argv): CLIOptions {
     globalConfig: opts['globalConfig'] as string[] | undefined,
     globalConfigRoot: opts['globalConfigRoot'] as string[] | undefined,
     globalConfigPath: opts['globalConfigPath'] as string[] | undefined,
+    template: opts['template'] as string[] | undefined,
     // --command-format: true = first (active), false = passed but not first (error), undefined = not passed
     commandFormat: opts['commandFormat'] !== undefined
       ? (isCommandFormatFirst(argv) ? true : false)

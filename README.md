@@ -413,7 +413,7 @@ See [docs/API.md](docs/API.md) for full API documentation.
 
 - [CONFIGURE.md](docs/CONFIGURE.md) — How to configure email templates in `config/emails/` and global elements in `config/globals/`. Covers all `email.json` properties, `email.js` attachment definitions, HTML and text file layout, and complete examples including multiple recipients, date helper syntax, inline lists, and DSN.
 
-- [CLI-OPTIONS.md](docs/CLI-OPTIONS.md) — Complete reference for every command-line option. Documents configurable options (usable in both CLI and `email.json`), non-configurable options, and tool options, including full syntax for `--config-email`, `--email-list`, `--global-config`, and the attachment flags.
+- [CLI-OPTIONS.md](docs/CLI-OPTIONS.md) — Complete reference for every command-line option. Documents configurable options (usable in both CLI and `email.json`), non-configurable options, and tool options, including full syntax for `--config-email`, `--email-list`, `--global-config`, `--template`, and the attachment flags.
 
 - [CLI-CHEATSHEET.md](docs/CLI-CHEATSHEET.md) — Quick-reference card for the most common `sendEmail` patterns. Covers raw mode, normal mode, bulk send, and the most frequently used flags in a compact format.
 

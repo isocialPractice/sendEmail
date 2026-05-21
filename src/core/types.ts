@@ -163,6 +163,9 @@ export interface CLIOptions {
   globalConfigRoot?: string[];   // --global-config:root <args> (sendEmail root only)
   globalConfigPath?: string[];   // --global-config:path <args> (CWD path only)
 
+  // Template Option
+  template?: string[];           // --template <key> <value> ... (resolves _flag directives in email.json)
+
   // Terminal Format Options
   commandFormat?: boolean;       // --command-format (must be first option; activates terminal mode)
 

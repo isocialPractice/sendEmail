@@ -263,6 +263,193 @@ When `email.json` is loaded:
 
 ---
 
+## `_flag` Directives and `--template`
+
+The `_flag` syntax lets an `email.json` declare which properties are filled in
+at send time by the `--template <key> <value> ...` CLI option. This is useful
+when one email template needs to be reused for many distinct messages without
+duplicating the config folder.
+
+### Grammar
+
+| Directive | Behavior |
+|---|---|
+| `"_flag"` | Optional. Empty string when not provided. |
+| `"_flag.required"` | Must be supplied via `--template` (or an equivalent CLI option such as `--send-to`). Throws if missing. |
+| `"_flag.optional"` | Optional. Property is removed when no value is provided. |
+| `"_flag.condition"` | Pairs with a `{% _flag.condition('<key>') %}` block in the body. See [Conditional Blocks](#conditional-blocks----_flagconditionkey) below. |
+| `"_flag:default-to=<value>"` | Optional. Falls back to `<value>` when not provided. |
+| `"_flag:map-to=<otherKey>"` | Also exposes the resolved value under `_flag.<otherKey>` for HTML use. |
+
+Modifiers may be combined, e.g. `"_flag.optional:map-to=salutation"`.
+
+### Example
+
+`config/emails/cmd-flag-example/email.json`:
+
+```json
+{
+  "to": "_flag.required",
+  "from": "_default",
+  "name": "_flag:map-to=salutation",
+  "subject": "_flag:default-to=Hello from sendEmail",
+  "html": "html",
+  "msg_1": "_flag.required",
+  "msg_2": "_flag",
+  "msg_etc": "_flag.optional"
+}
+```
+
+`config/emails/cmd-flag-example/html/html.htm`:
+
+```html
+{{ _flag.salutation }}
+<p>{{ _flag.msg_1 }}</p>
+<p>{{ _flag.msg_2 }}</p>
+<p>{{ _flag.msg_etc }}</p>
+```
+
+Send it:
+
+```bash
+sendEmail --config-email cmd-flag-example \
+  --send-to alice@example.com \
+  --template name "Alice" msg_1 "Welcome!" msg_2 "Let us know if you need anything"
+```
+
+### Resolution Order
+
+For each property whose value is a `_flag` directive:
+
+1. Use the value from `--template` if a matching key was supplied.
+2. Otherwise, use a same-named CLI override (e.g. `--send-to` populates `to`).
+3. Otherwise, use the directive's `:default-to=<value>` if present.
+4. Otherwise, behave per the modifier:
+   - `_flag.required` → throw `ConfigurationError` listing every missing key.
+   - `_flag.optional` → remove the property from the email config.
+   - plain `_flag` → empty string (and remove the raw directive from the config).
+
+Every resolved value is exposed both at its property name (so the engine treats
+it normally) and as `_flag.<property>` in the template variable map, so HTML
+and text bodies can reference it with `{{ _flag.<property> }}`.
+
+### CLI Errors
+
+```bash
+# Missing required directive
+sendEmail --config-email cmd-flag-example --send-to alice@example.com
+# → Missing required --template value(s): msg_1
+
+# Odd number of arguments
+sendEmail --config-email cmd-flag-example --template msg_1
+# → --template requires an even number of arguments
+
+# --template without --config-email
+sendEmail --send-to alice@example.com --template msg_1 "Hi"
+# → --template requires --config-email <name>
+```
+
+### Conditional Blocks — `{% _flag.condition('<key>') %}`
+
+For more complex templates where the rendered HTML depends on whether a
+`_flag` value was supplied (or on its exact value), declare the property with
+the `_flag.condition` directive and pair it with a `{% _flag.condition('<key>') %}`
+block in your HTML or text body.
+
+In `email.json`:
+
+```json
+"name": "_flag.condition:map-to=salutation",
+"msg": "_flag"
+```
+
+In `html.htm`:
+
+```html
+{% _flag.condition('salutation') %}
+ - name: undefined
+     message: <p>Hello,</p>
+ - else:
+     message: <p>Hey {% _flag 'name' %},</p>
+{% end %}
+
+<p>{{ _flag.msg }}</p>
+```
+
+> Mark the end of every condition block with `{% end %}`.
+
+#### Case grammar
+
+Cases inside the block are evaluated in order against the value of the
+condition key (the argument passed to `_flag.condition('...')`). The argument
+is typically the `:map-to=` alias declared on the source property.
+
+| Case header | When it matches |
+|---|---|
+| `- <prop>: undefined` | Value is empty/unset. |
+| `- <prop>: {flagged}` | Value is non-empty. Supports nested sub-cases (see below). |
+| `- else:` | Top-level fallback when no preceding case matched. |
+| `- equal: "<literal>"` | Only valid as a sub-case under `{flagged}`. Matches when value equals `<literal>` exactly. |
+
+Each case carries its rendered HTML on a `message:` line:
+
+```yaml
+ - <case header>
+     message: <html to render when this case matches>
+```
+
+Lines beginning with `comment:` are ignored.
+
+#### Nested `{flagged}` example
+
+```html
+{% _flag.condition('salutation') %}
+ - name: undefined
+     message: <p>Hello,</p>
+ - name: {flagged}
+     - equal: "Admin"
+         message: <p>Greetings, {% _flag 'name' %},</p>
+     - else:
+         message: <p>Hey {% _flag 'name' %},</p>
+{% end %}
+```
+
+#### Inline `{% _flag 'name' %}`
+
+Inside any `message:` value (and anywhere else in your HTML/text body) you can
+reference a resolved flag with `{% _flag 'name' %}`. It is replaced by the
+value of `_flag.<name>`, or by the empty string when the flag was not
+supplied. This is equivalent to `{{ _flag.<name> }}` but is processed during
+condition resolution so it can appear inside a chosen `message:`.
+
+#### Worked examples
+
+`sendEmail --config-email cmd-flag-example --template name "Jim" msg "It worked"`
+
+```html
+<p>Hey Jim,</p>
+
+<p>It worked</p>
+```
+
+`sendEmail --config-email cmd-flag-example` (no `--template`)
+
+```html
+<p>Hello,</p>
+
+<p></p>
+```
+
+`sendEmail --config-email cmd-flag-example --template name "Admin" msg "Server reboot at midnight"`
+
+```html
+<p>Greetings, Admin,</p>
+
+<p>Server reboot at midnight</p>
+```
+
+---
+
 ## Global Template Tags
 
 Embed a reusable global template inside an email HTML or text file using the `{% global %}` tag.

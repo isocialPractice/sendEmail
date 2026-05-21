@@ -1,0 +1,18 @@
+{
+  "to": "_flag.required",
+  "from": "_default",
+  "replyTo": "_default",
+  "name": "_flag.condition:map-to=salutation",
+  "subject": "_flag:default-to=Hello from sendEmail",
+  "html": "html",
+  "msg_1": "_flag.required",
+  "msg_2": "_flag",
+  "msg_etc": "_flag.optional",
+  "log": false,
+  "dsn": {
+    "id": "DSN_ID",
+    "return": "headers",
+    "notify": ["success", "delay"],
+    "recipient": "_default"
+  }
+}

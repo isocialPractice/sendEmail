@@ -194,7 +194,10 @@ export class EmailEngine {
     let text: string | undefined;
     if (merged.text) {
       const rawText = await this.loadTextContent(merged.text);
-      text = this.templateEngine.substitute(rawText, templateVars);
+      text = this.templateEngine.substitute(
+        this.templateEngine.processFlagConditions(rawText, templateVars),
+        templateVars
+      );
     }
 
     // Load attachments
@@ -331,13 +334,14 @@ export class EmailEngine {
     emailConfig: EmailConfig,
     emailList: EmailList,
     overrides: Partial<EmailConfig & { attachments?: Attachment[] }> = {},
-    onProgress?: (current: number, total: number, result: SendResult) => void
+    onProgress?: (current: number, total: number, result: SendResult) => void,
+    extraVars: Partial<TemplateVariables> = {}
   ): Promise<BulkSendResult> {
     const results: SendResult[] = [];
     let successful = 0;
     let failed = 0;
 
-    for await (const { contact, variables, index, total } of this.listProcessor.process(emailList)) {
+    for await (const { contact, variables, index, total } of this.listProcessor.process(emailList, extraVars)) {
       // Override 'to' with the current contact's email
       const contactOverrides = {
         ...overrides,
@@ -432,7 +436,10 @@ export class EmailEngine {
         content = await readFile(filePath);
       }
 
-      parts.push(this.templateEngine.substitute(content, vars));
+      parts.push(this.templateEngine.substitute(
+        this.templateEngine.processFlagConditions(content, vars),
+        vars
+      ));
     }
 
     return parts.join('\n');

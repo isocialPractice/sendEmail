@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <body>
+    <!-- Conditional salutation block. The condition key "salutation" is the
+         :map-to= target declared on the "name" property in email.json:
+             "name": "_flag.condition:map-to=salutation"
+
+         Cases below are evaluated in order against `_flag.salutation`:
+           - undefined  → no value provided
+           - {flagged}  → any value provided; supports nested `equal:` matches
+           - else       → fallback                            -->
+    {% _flag.condition('salutation') %}
+     - name: undefined
+         message: <p>Hello,</p>
+     - name: {flagged}
+         - equal: "Admin"
+             message: <p>Greetings, {% _flag 'name' %},</p>
+         - else:
+             message: <p>Hey {% _flag 'name' %},</p>
+    {% end %}
+
+    <!-- Required: msg_1 must be passed via --template msg_1 "..." -->
+    <p>{{ _flag.msg_1 }}</p>
+
+    <!-- Optional with empty-string fallback (plain _flag) -->
+    <p>{{ _flag.msg_2 }}</p>
+
+    <!-- Optional: when omitted, _flag.msg_etc resolves to an empty string. -->
+    <p>{{ _flag.msg_etc }}</p>
+
+    <hr>
+    <p>&copy; {{theYear}} Example Org</p>
+  </body>
+</html>
