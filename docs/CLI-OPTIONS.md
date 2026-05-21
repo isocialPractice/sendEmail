@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # sendEmail CLI Options Reference
 
 Complete documentation for all `sendEmail` command-line options.
@@ -872,3 +873,4 @@ This loads `lists/billing.json` and sends one email to all contacts.
 }
 ```
 This sends one email per contact (repetitive mode) using the `billing` list.
+<!-- {% endraw %} -->

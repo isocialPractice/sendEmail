@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # sendEmail ![icon](icon.png)
 
 Command-line tool to send an email, or automate repetitive emails.
@@ -426,3 +427,5 @@ See [docs/API.md](docs/API.md) for full API documentation.
 - [TERMINAL-FORMAT.md](docs/TERMINAL-FORMAT.md) — Reference for Terminal Mode (`--command-format`), which lets you embed live shell command output in CLI argument values. Documents the `$>command: {{ }};` syntax, prohibited commands, and interaction with template variables.
 
 - [TYPES.md](docs/TYPES.md) — Full type reference for `OptionType`, `ConfigItemType`, and send mode classifications. Useful for understanding how options and config files are categorized internally and for contributors extending the tool.
+
+<!-- {% endraw %} -->

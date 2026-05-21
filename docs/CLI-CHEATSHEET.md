@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # sendEmail CLI Cheatsheet
 
 Quick reference for the `sendEmail` command-line tool.
@@ -262,3 +263,4 @@ Or with inline contacts:
 ```
 
 Without `sendAll`, `emailList` / `email-list` triggers one-email-per-contact (repetitive) mode.
+<!-- {% endraw %} -->

@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Configuration
 
 ## Setup
@@ -32,3 +33,5 @@ Then edit `config/accounts/_default.js` with your real credentials.
 A pre-commit hook (`.git/hooks/pre-commit`) is in place as a second line of defense. If you accidentally stage files from `config/accounts/`, the commit will be blocked with instructions to unstage them.
 
 If you do accidentally commit credentials, treat them as **compromised immediately** — revoke and regenerate them.
+
+<!-- {% endraw %} -->

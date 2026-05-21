@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # sendEmail Engine API
 
 Documentation for using the `EmailEngine` as a library in TypeScript/JavaScript projects.
@@ -484,3 +485,5 @@ try {
   }
 }
 ```
+
+<!-- {% endraw %} -->
