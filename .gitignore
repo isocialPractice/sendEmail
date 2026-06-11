@@ -46,3 +46,4 @@ logs/
 
 # local support assets
 img/*/
+_tasks/
