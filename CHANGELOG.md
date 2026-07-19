@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0]
+## [1.1.0-alpha]
 
 ### Added
 
@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     parsing, undefined / flagged / else / equal case matching, nested cases,
     inline `{% _flag 'name' %}` substitution, and multi-block templates.
 
-## [1.0.1]
+## [1.0.1-alpha]
 
 ### Added
 
@@ -91,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated all 4 confirmation points (raw, normal, send-all, bulk modes)
   - `--force` takes precedence when both `--confirm` and `--force` are specified
 
-## [1.0.0]
+## [1.0.0-alpha]
 
 Initial release release.
 

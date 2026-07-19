@@ -1,10 +1,31 @@
 {
   "name": "send-email",
-  "version": "1.1.0",
+  "version": "1.1.0-alpha",
   "description": "Command-line tool to send an email, or automate repetitive emails",
+  "author": "John Haugabook",
+  "publisher": "isocialPractice",
   "type": "module",
   "main": "./dist/core/engine.js",
   "types": "./dist/core/engine.d.ts",
+  "files": [
+   "attachments/Billing Statement.pdf",
+   "bin/",
+   "config/README.md",
+   "config/emails/",
+   "config/globals/example/",
+   "dist/",
+   "docs/",
+   "img/img.jpg",
+   "img/logo.jpg",
+   "img/map.jpg",
+   "lists/emailList.json",
+   "src/",
+   "tests/",
+   "CHANGELOG.md",
+   "LICENSE",
+   "README.md",
+   "icon.png"
+  ],
   "exports": {
     ".": {
       "import": "./dist/core/engine.js",
